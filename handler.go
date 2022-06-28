@@ -9,10 +9,12 @@ import (
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/core"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/firmware"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/types"
+	"github.com/simonvetter/modbus"
 )
 
 var (
 	nextTransactionId = 0
+	modclient         *modbus.ModbusClient
 )
 
 // TransactionInfo contains info about a transaction
@@ -33,6 +35,7 @@ func (ti *TransactionInfo) hasTransactionEnded() bool {
 // ConnectorInfo contains status and ongoing transaction ID for a connector
 type ConnectorInfo struct {
 	status             core.ChargePointStatus
+	evccid             string
 	currentTransaction int
 }
 
@@ -45,9 +48,11 @@ type ChargePointState struct {
 	status            core.ChargePointStatus
 	diagnosticsStatus firmware.DiagnosticsStatus
 	firmwareStatus    firmware.FirmwareStatus
-	connectors        map[int]*ConnectorInfo // No assumptions about the # of connectors
+	connectors        map[int]*ConnectorInfo // No assumptions about the # of connectors && In case of Bender / JuiceME , #1 is the only connector
 	transactions      map[int]*TransactionInfo
 	errorCode         core.ChargePointErrorCode
+	ipadress          string
+	//evccid            string //We do this per Connector = Future Proofing for Multiconnector Chargepoints
 }
 
 func (cps *ChargePointState) getConnector(id int) *ConnectorInfo {
@@ -70,7 +75,7 @@ type CentralSystemHandler struct {
 func (handler *CentralSystemHandler) OnAuthorize(chargePointId string, request *core.AuthorizeRequest) (confirmation *core.AuthorizeConfirmation, err error) {
 	var authorized types.AuthorizationStatus
 	log.Printf(request.IdTag)
-	if request.IdTag == "113e0236" || request.IdTag == "40b66b7c" {
+	if request.IdTag == "113e0236" || request.IdTag == "40b66b7c" || request.IdTag == "bd52b9a0" {
 		authorized = types.AuthorizationStatusAccepted
 	} else {
 		authorized = types.AuthorizationStatusBlocked
@@ -111,7 +116,18 @@ func (handler *CentralSystemHandler) OnStatusNotification(chargePointId string, 
 	if request.ConnectorId > 0 {
 		connectorInfo := info.getConnector(request.ConnectorId)
 		connectorInfo.status = request.Status
+		if connectorInfo.status == "Charging" {
+			// EV is plugged in
+			modclient, err = modbus.NewClient(&modbus.ClientConfiguration{
+				URL:     "tcp://" + info.ipadress + ":502",
+				Timeout: 1 * time.Second,
+			})
+		} else if connectorInfo.status == "Available" {
+			//No EV is plugged in
+			connectorInfo.evccid = "None"
+		}
 		logDefault(chargePointId, request.GetFeatureName()).Infof("connector %v updated status to %v", request.ConnectorId, request.Status)
+		log.Println(request.Info)
 	} else {
 		info.status = request.Status
 		logDefault(chargePointId, request.GetFeatureName()).Infof("all connectors updated status to %v", request.Status)

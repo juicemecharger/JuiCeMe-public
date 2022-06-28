@@ -16,6 +16,7 @@ import (
 const (
 	defaultListenPort        = 8887
 	defaultHeartbeatInterval = 60
+	waitinterval             = 5
 )
 
 var log *logrus.Logger
@@ -28,27 +29,12 @@ func setupCentralSystem() ocpp16.CentralSystem {
 // Run for every connected Charge Point, to simulate some functionality
 func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 	var e error
-	//// Wait for some time
-	//time.Sleep(5 * time.Second)
-	// Get current local list version
-	//cb3 := func(confirmation *localauth.GetLocalListVersionConfirmation, err error) {
-	//	if err != nil {
-	//		logDefault(chargePointID, localauth.GetLocalListVersionFeatureName).Errorf("error on request: %v", err)
-	//	} else {
-	//		logDefault(chargePointID, confirmation.GetFeatureName()).Infof("current local list version: %v", confirmation.ListVersion)
-	//	}
-	//}
-	//e = centralSystem.GetLocalListVersion(chargePointID, cb3)
-	//if e != nil {
-	//	logDefault(chargePointID, localauth.GetLocalListVersionFeatureName).Errorf("couldn't send message: %v", e)
-	//	return
-	//}
-	// Wait for some time
-	time.Sleep(5 * time.Second)
+	//Wait
+	time.Sleep(waitinterval * time.Second)
 	configKey := "MeterValueSampleInterval"
 	configValue := "10"
 	// Change meter sampling values time
-	cb4 := func(confirmation *core.ChangeConfigurationConfirmation, err error) {
+	callback1 := func(confirmation *core.ChangeConfigurationConfirmation, err error) {
 		if err != nil {
 			logDefault(chargePointID, core.ChangeConfigurationFeatureName).Errorf("error on request: %v", err)
 		} else if confirmation.Status == core.ConfigurationStatusNotSupported {
@@ -59,16 +45,16 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 			logDefault(chargePointID, confirmation.GetFeatureName()).Infof("updated configuration for key %v to: %v", configKey, configValue)
 		}
 	}
-	e = centralSystem.ChangeConfiguration(chargePointID, cb4, configKey, configValue)
+	e = centralSystem.ChangeConfiguration(chargePointID, callback1, configKey, configValue)
 	if e != nil {
 		logDefault(chargePointID, localauth.GetLocalListVersionFeatureName).Errorf("couldn't send message: %v", e)
 		return
 	}
 
-	// Wait for some time
-	time.Sleep(5 * time.Second)
+	// Wait
+	time.Sleep(waitinterval * time.Second)
 	// Trigger a heartbeat message
-	cb5 := func(confirmation *remotetrigger.TriggerMessageConfirmation, err error) {
+	callback2 := func(confirmation *remotetrigger.TriggerMessageConfirmation, err error) {
 		if err != nil {
 			logDefault(chargePointID, remotetrigger.TriggerMessageFeatureName).Errorf("error on request: %v", err)
 		} else if confirmation.Status == remotetrigger.TriggerMessageStatusAccepted {
@@ -77,29 +63,27 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 			logDefault(chargePointID, confirmation.GetFeatureName()).Infof("%v trigger was rejected", core.HeartbeatFeatureName)
 		}
 	}
-	e = centralSystem.TriggerMessage(chargePointID, cb5, core.HeartbeatFeatureName)
+	e = centralSystem.TriggerMessage(chargePointID, callback2, core.HeartbeatFeatureName)
 	if e != nil {
 		logDefault(chargePointID, remotetrigger.TriggerMessageFeatureName).Errorf("couldn't send message: %v", e)
 		return
 	}
 
-	// Wait for some time
-	time.Sleep(5 * time.Second)
-	// Trigger a diagnostics status notification
-	cb6 := func(confirmation *remotetrigger.TriggerMessageConfirmation, err error) {
-		if err != nil {
-			logDefault(chargePointID, remotetrigger.TriggerMessageFeatureName).Errorf("error on request: %v", err)
-		} else if confirmation.Status == remotetrigger.TriggerMessageStatusAccepted {
-			logDefault(chargePointID, confirmation.GetFeatureName()).Infof("%v triggered successfully", firmware.GetDiagnosticsFeatureName)
-		} else if confirmation.Status == remotetrigger.TriggerMessageStatusRejected {
-			logDefault(chargePointID, confirmation.GetFeatureName()).Infof("%v trigger was rejected", firmware.GetDiagnosticsFeatureName)
-		}
-	}
-	e = centralSystem.TriggerMessage(chargePointID, cb6, firmware.DiagnosticsStatusNotificationFeatureName)
-	if e != nil {
-		logDefault(chargePointID, remotetrigger.TriggerMessageFeatureName).Errorf("couldn't send message: %v", e)
-		return
-	}
+	//Set to safe Charge Limit
+	time.Sleep(waitinterval * time.Second)
+	//callback4 := func(confirmation *remotetrigger.TriggerMessageConfirmation, err error) {
+	//	if err != nil {
+	//		logDefault(chargePointID, remotetrigger.TriggerMessageFeatureName).Errorf("error on request: %v", err)
+	//	} else if confirmation.Status == remotetrigger.TriggerMessageStatusAccepted {
+	//		logDefault(chargePointID, confirmation.GetFeatureName()).Infof("%v triggered successfully", "")
+	//	} else if confirmation.Status == remotetrigger.TriggerMessageStatusRejected {
+	//		logDefault(chargePointID, confirmation.GetFeatureName()).Infof("%v trigger was rejected", "")
+	//	}
+	//}
+	//e = centralSystem.TriggerMessage(chargePointID, callback3, smartcharging.)
+
+	///
+
 }
 
 // Start function
@@ -118,7 +102,7 @@ func main() {
 	centralSystem.SetSmartChargingHandler(handler)
 	// Add handlers for dis/connection of charge points
 	centralSystem.SetNewChargePointHandler(func(chargePoint ocpp16.ChargePointConnection) {
-		handler.chargePoints[chargePoint.ID()] = &ChargePointState{connectors: map[int]*ConnectorInfo{}, transactions: map[int]*TransactionInfo{}}
+		handler.chargePoints[chargePoint.ID()] = &ChargePointState{connectors: map[int]*ConnectorInfo{}, transactions: map[int]*TransactionInfo{}, ipadress: "0.0.0.0"}
 		log.WithField("client", chargePoint.ID()).Info("new charge point connected")
 		go setupRoutine(chargePoint.ID(), handler)
 	})
@@ -137,7 +121,7 @@ func main() {
 
 func init() {
 	log = logrus.New()
-	log.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
+	log.SetFormatter(&logrus.TextFormatter{FullTimestamp: false})
 	// Set this to DebugLevel if you want to retrieve verbose logs from the ocppj and websocket layers
-	log.SetLevel(logrus.InfoLevel)
+	log.SetLevel(logrus.DebugLevel)
 }
