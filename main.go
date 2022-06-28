@@ -7,8 +7,6 @@ import (
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/firmware"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/localauth"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/remotetrigger"
-	"github.com/lorenzodonini/ocpp-go/ocpp1.6/reservation"
-	"github.com/lorenzodonini/ocpp-go/ocpp1.6/types"
 	"github.com/lorenzodonini/ocpp-go/ocppj"
 	"github.com/sirupsen/logrus"
 
@@ -29,6 +27,7 @@ func setupCentralSystem() ocpp16.CentralSystem {
 
 // Run for every connected Charge Point, to simulate some functionality
 func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
+	var e error
 	//// Wait for some time
 	//time.Sleep(5 * time.Second)
 	// Get current local list version
