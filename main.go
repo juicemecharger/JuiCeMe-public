@@ -29,23 +29,48 @@ func setupCentralSystem() ocpp16.CentralSystem {
 // Run for every connected Charge Point, pushing config
 func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 	var e error
+	var KeyMeterValuesSampledData = "MeterValuesSampledData"
+	var KeyMeterValueSampleInterval = "MeterValueSampleInterval"
+	var MeterSampleInterval = "10"
 	//Wait
 	time.Sleep(waitinterval * time.Second)
-	configKey := "MeterValueSampleInterval"
-	configValue := "10"
+	//moved up
+	//configKey := "MeterValueSampleInterval"
+	//configValue := "10"
+
 	// Change meter sampling values time
 	callback1 := func(confirmation *core.ChangeConfigurationConfirmation, err error) {
 		if err != nil {
 			logDefault(chargePointID, core.ChangeConfigurationFeatureName).Errorf("error on request: %v", err)
 		} else if confirmation.Status == core.ConfigurationStatusNotSupported {
-			logDefault(chargePointID, confirmation.GetFeatureName()).Warnf("couldn't update configuration for unsupported key: %v", configKey)
+			logDefault(chargePointID, confirmation.GetFeatureName()).Warnf("couldn't update configuration for unsupported key: %v", KeyMeterValueSampleInterval)
 		} else if confirmation.Status == core.ConfigurationStatusRejected {
-			logDefault(chargePointID, confirmation.GetFeatureName()).Warnf("couldn't update configuration for readonly key: %v", configKey)
+			logDefault(chargePointID, confirmation.GetFeatureName()).Warnf("couldn't update configuration for readonly key: %v", KeyMeterValueSampleInterval)
 		} else {
-			logDefault(chargePointID, confirmation.GetFeatureName()).Infof("updated configuration for key %v to: %v", configKey, configValue)
+			logDefault(chargePointID, confirmation.GetFeatureName()).Infof("updated configuration for key %v to: %v", KeyMeterValueSampleInterval, MeterSampleInterval)
 		}
 	}
-	e = centralSystem.ChangeConfiguration(chargePointID, callback1, configKey, configValue)
+	e = centralSystem.ChangeConfiguration(chargePointID, callback1, KeyMeterValueSampleInterval, MeterSampleInterval)
+	if e != nil {
+		logDefault(chargePointID, localauth.GetLocalListVersionFeatureName).Errorf("couldn't send message: %v", e)
+		return
+	}
+
+	// Setting Meter Sampling Data (Supported by JuiceMe, maximum data)
+	const ValuePreferedMeterValuesSampleData = "Current.Import.L1,Current.Import.L2,Current.Import.L3,Current.Offered,Energy.Active.Import.Register,Power.Active.Import"
+	time.Sleep(waitinterval * time.Second)
+	callback1v2 := func(confirmation *core.ChangeConfigurationConfirmation, err error) {
+		if err != nil {
+			logDefault(chargePointID, core.ChangeConfigurationFeatureName).Errorf("error on request: %v", err)
+		} else if confirmation.Status == core.ConfigurationStatusNotSupported {
+			logDefault(chargePointID, confirmation.GetFeatureName()).Warnf("couldn't update configuration for unsupported key: %v", KeyMeterValueSampleInterval)
+		} else if confirmation.Status == core.ConfigurationStatusRejected {
+			logDefault(chargePointID, confirmation.GetFeatureName()).Warnf("couldn't update configuration for readonly key: %v", KeyMeterValueSampleInterval)
+		} else {
+			logDefault(chargePointID, confirmation.GetFeatureName()).Infof("updated configuration for key %v to: %v", KeyMeterValueSampleInterval, MeterSampleInterval)
+		}
+	}
+	e = centralSystem.ChangeConfiguration(chargePointID, callback1v2, KeyMeterValuesSampledData, ValuePreferedMeterValuesSampleData)
 	if e != nil {
 		logDefault(chargePointID, localauth.GetLocalListVersionFeatureName).Errorf("couldn't send message: %v", e)
 		return
