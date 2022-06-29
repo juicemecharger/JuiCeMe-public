@@ -3,20 +3,20 @@ package main
 import (
 	"time"
 
+	ocpp16 "github.com/lorenzodonini/ocpp-go/ocpp1.6"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/core"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/firmware"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/localauth"
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/remotetrigger"
 	"github.com/lorenzodonini/ocpp-go/ocppj"
 	"github.com/sirupsen/logrus"
-
-	ocpp16 "github.com/lorenzodonini/ocpp-go/ocpp1.6"
 )
 
 const (
 	defaultListenPort        = 8887
 	defaultHeartbeatInterval = 60
 	waitinterval             = 5
+	version                  = "0.1.1"
 )
 
 var log *logrus.Logger
@@ -26,7 +26,7 @@ func setupCentralSystem() ocpp16.CentralSystem {
 	return ocpp16.NewCentralSystem(nil, nil)
 }
 
-// Run for every connected Charge Point, to simulate some functionality
+// Run for every connected Charge Point, pushing config
 func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 	var e error
 	//Wait
@@ -69,6 +69,23 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 		return
 	}
 
+	// Wait
+	time.Sleep(waitinterval * time.Second)
+	// Trigger a diagnostics status notification
+	callback3 := func(confirmation *remotetrigger.TriggerMessageConfirmation, err error) {
+		if err != nil {
+			logDefault(chargePointID, remotetrigger.TriggerMessageFeatureName).Errorf("error on request: %v", err)
+		} else if confirmation.Status == remotetrigger.TriggerMessageStatusAccepted {
+			logDefault(chargePointID, confirmation.GetFeatureName()).Infof("%v triggered successfully", firmware.GetDiagnosticsFeatureName)
+		} else if confirmation.Status == remotetrigger.TriggerMessageStatusRejected {
+			logDefault(chargePointID, confirmation.GetFeatureName()).Infof("%v trigger was rejected", firmware.GetDiagnosticsFeatureName)
+		}
+	}
+	e = centralSystem.TriggerMessage(chargePointID, callback3, firmware.DiagnosticsStatusNotificationFeatureName)
+	if e != nil {
+		logDefault(chargePointID, remotetrigger.TriggerMessageFeatureName).Errorf("couldn't send message: %v", e)
+		return
+	}
 	//Set to safe Charge Limit
 	time.Sleep(waitinterval * time.Second)
 	//callback4 := func(confirmation *remotetrigger.TriggerMessageConfirmation, err error) {
@@ -102,7 +119,7 @@ func main() {
 	centralSystem.SetSmartChargingHandler(handler)
 	// Add handlers for dis/connection of charge points
 	centralSystem.SetNewChargePointHandler(func(chargePoint ocpp16.ChargePointConnection) {
-		handler.chargePoints[chargePoint.ID()] = &ChargePointState{connectors: map[int]*ConnectorInfo{}, transactions: map[int]*TransactionInfo{}, ipadress: "0.0.0.0"}
+		handler.chargePoints[chargePoint.ID()] = &ChargePointState{connectors: map[int]*ConnectorInfo{}, transactions: map[int]*TransactionInfo{}}
 		log.WithField("client", chargePoint.ID()).Info("new charge point connected")
 		go setupRoutine(chargePoint.ID(), handler)
 	})
@@ -111,10 +128,11 @@ func main() {
 		delete(handler.chargePoints, chargePoint.ID())
 	})
 	ocppj.SetLogger(log.WithField("logger", "ocppj"))
-	//ws.SetLogger(log.WithField("logger", "websocket"))
+	//ws.Server.Errors()
 
 	// Run central system
 	log.Infof("starting central system on port %v", listenPort)
+	go handler.Listen(version)
 	centralSystem.Start(listenPort, "/{ws}")
 	log.Info("stopped central system")
 }
