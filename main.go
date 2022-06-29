@@ -16,7 +16,7 @@ const (
 	defaultListenPort        = 8887
 	defaultHeartbeatInterval = 60
 	waitinterval             = 5
-	version                  = "0.1.1"
+	version                  = "0.1.2"
 )
 
 var log *logrus.Logger
