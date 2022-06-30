@@ -73,15 +73,16 @@ func (handler *CentralSystemHandler) api(w http.ResponseWriter, r *http.Request)
 		} else {
 			connectorid = 1
 		}
-		handler.chargePoints[req.Params[0]].connectors[connectorid].unlockProgress = ""
+		handler.chargePoints[req.Params[0]].Connectors[connectorid].UnlockProgress = ""
 		go handler.UnlockPort(req.Params[0], connectorid)
 		for timeout < 10 {
 			timeout++
-			time.Sleep(500 * time.Millisecond)
-			if handler.chargePoints[req.Params[0]].connectors[connectorid].unlockProgress != "" {
-				confirmation = handler.chargePoints[req.Params[0]].connectors[connectorid].unlockProgress
+			time.Sleep(5 * time.Millisecond)
+			if handler.chargePoints[req.Params[0]].Connectors[connectorid].UnlockProgress != "" {
+				confirmation = handler.chargePoints[req.Params[0]].Connectors[connectorid].UnlockProgress
 				break
 			}
+			time.Sleep(500 * time.Millisecond)
 		}
 		if confirmation != "" {
 			reply.Result = confirmation

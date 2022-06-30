@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/lorenzodonini/ocpp-go/ocpp1.6/remotetrigger"
 	"github.com/sirupsen/logrus"
 
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/core"
@@ -18,29 +19,41 @@ var (
 
 // TransactionInfo contains info about a transaction
 type TransactionInfo struct {
-	id          int
-	startTime   *types.DateTime
-	endTime     *types.DateTime
-	startMeter  int
-	endMeter    int
-	connectorId int
-	idTag       string
+	Id          int
+	StartTime   *types.DateTime
+	EndTime     *types.DateTime
+	StartMeter  int
+	EndMeter    int
+	ConnectorId int
+	IdTag       string
 }
 
 func (ti *TransactionInfo) hasTransactionEnded() bool {
-	return ti.endTime != nil && !ti.endTime.IsZero()
+	return ti.EndTime != nil && !ti.EndTime.IsZero()
 }
 
 // ConnectorInfo contains status and ongoing transaction ID for a connector
 type ConnectorInfo struct {
-	status         core.ChargePointStatus
-	unlockProgress string
-	//evccid             string //BMW is dipshit
-	currentTransaction int
+	Status             core.ChargePointStatus
+	UnlockProgress     string
+	CurrentTransaction int
+}
+
+type PortCurrents struct {
+	L1 uint
+	L2 uint
+	L3 uint
+}
+
+type PortPower struct {
+	L1    uint
+	L2    uint
+	L3    uint
+	Total uint
 }
 
 func (ci *ConnectorInfo) hasTransactionInProgress() bool {
-	return ci.currentTransaction >= 0
+	return ci.CurrentTransaction >= 0
 }
 
 type jsondata struct {
@@ -52,23 +65,24 @@ type cardstruct struct {
 	Transactions []TransactionInfo
 }
 
-// ChargePointState contains some simple state for a connected charge point
+// ChargePointState contains all relevant state data for a connected charge point, simplified only working with single-connector chargepoints
 type ChargePointState struct {
-	status            core.ChargePointStatus
+	Status            core.ChargePointStatus
 	diagnosticsStatus firmware.DiagnosticsStatus
 	firmwareStatus    firmware.FirmwareStatus
-	connectors        map[int]*ConnectorInfo // No assumptions about the # of connectors && In case of Bender / JuiceME , #1 is the only connector
-	transactions      map[int]*TransactionInfo
-	errorCode         core.ChargePointErrorCode
-	//ipadress          string
-	//evccid            string //We do this per Connector = Future Proofing for Multiconnector Chargepoints , Or we dont at all because BWM thought it was not needed....
+	Connectors        map[int]*ConnectorInfo // No assumptions about the # of connectors && In case of Bender / JuiceME , #1 is the only connector
+	Currents          PortCurrents
+	Power             PortPower
+	lastTimeStamp     *types.DateTime
+	Transactions      map[int]*TransactionInfo
+	ErrorCode         core.ChargePointErrorCode
 }
 
 func (cps *ChargePointState) getConnector(id int) *ConnectorInfo {
-	ci, ok := cps.connectors[id]
+	ci, ok := cps.Connectors[id]
 	if !ok {
-		ci = &ConnectorInfo{currentTransaction: -1}
-		cps.connectors[id] = ci
+		ci = &ConnectorInfo{CurrentTransaction: -1}
+		cps.Connectors[id] = ci
 	}
 	return ci
 }
@@ -85,7 +99,7 @@ type CentralSystemHandler struct {
 func (handler *CentralSystemHandler) OnAuthorize(chargePointId string, request *core.AuthorizeRequest) (confirmation *core.AuthorizeConfirmation, err error) {
 	var authorized types.AuthorizationStatus
 	log.Printf("ID_TAG: " + request.IdTag)
-	if request.IdTag == "113e0236" || request.IdTag == "40b66b7c" || request.IdTag == "bd52b9a0" {
+	if request.IdTag == "113e0236" || request.IdTag == "40b66b7c" || request.IdTag == "bd52b9a0" || request.IdTag == "DC442718546C" {
 		authorized = types.AuthorizationStatusAccepted
 	} else {
 		authorized = types.AuthorizationStatusBlocked
@@ -122,10 +136,10 @@ func (handler *CentralSystemHandler) OnStatusNotification(chargePointId string, 
 	if !ok {
 		return nil, fmt.Errorf("unknown charge point %v", chargePointId)
 	}
-	info.errorCode = request.ErrorCode
+	info.ErrorCode = request.ErrorCode
 	if request.ConnectorId > 0 {
 		connectorInfo := info.getConnector(request.ConnectorId)
-		connectorInfo.status = request.Status
+		connectorInfo.Status = request.Status
 		//if connectorInfo.status == "Charging" {
 		//	time.Sleep(1 * time.Second)
 		// EV is plugged in
@@ -145,7 +159,7 @@ func (handler *CentralSystemHandler) OnStatusNotification(chargePointId string, 
 		logDefault(chargePointId, request.GetFeatureName()).Infof("connector %v updated status to %v", request.ConnectorId, request.Status)
 		log.Println(request.Info)
 	} else {
-		info.status = request.Status
+		info.Status = request.Status
 		logDefault(chargePointId, request.GetFeatureName()).Infof("all connectors updated status to %v", request.Status)
 	}
 	return core.NewStatusNotificationConfirmation(), nil
@@ -157,21 +171,21 @@ func (handler *CentralSystemHandler) OnStartTransaction(chargePointId string, re
 		return nil, fmt.Errorf("unknown charge point %v", chargePointId)
 	}
 	connector := info.getConnector(request.ConnectorId)
-	if connector.currentTransaction >= 0 {
+	if connector.CurrentTransaction >= 0 {
 		return nil, fmt.Errorf("connector %v is currently busy with another transaction", request.ConnectorId)
 	}
 	transaction := &TransactionInfo{}
-	transaction.idTag = request.IdTag
-	transaction.connectorId = request.ConnectorId
-	transaction.startMeter = request.MeterStart
-	transaction.startTime = request.Timestamp
-	transaction.id = nextTransactionId
+	transaction.IdTag = request.IdTag
+	transaction.ConnectorId = request.ConnectorId
+	transaction.StartMeter = request.MeterStart
+	transaction.StartTime = request.Timestamp
+	transaction.Id = nextTransactionId
 	nextTransactionId += 1
-	connector.currentTransaction = transaction.id
-	info.transactions[transaction.id] = transaction
+	connector.CurrentTransaction = transaction.Id
+	info.Transactions[transaction.Id] = transaction
 	//TODO: check billable clients
-	logDefault(chargePointId, request.GetFeatureName()).Infof("started transaction %v for connector %v", transaction.id, transaction.connectorId)
-	return core.NewStartTransactionConfirmation(types.NewIdTagInfo(types.AuthorizationStatusAccepted), transaction.id), nil
+	logDefault(chargePointId, request.GetFeatureName()).Infof("started transaction %v for connector %v", transaction.Id, transaction.ConnectorId)
+	return core.NewStartTransactionConfirmation(types.NewIdTagInfo(types.AuthorizationStatusAccepted), transaction.Id), nil
 }
 
 func (handler *CentralSystemHandler) OnStopTransaction(chargePointId string, request *core.StopTransactionRequest) (confirmation *core.StopTransactionConfirmation, err error) {
@@ -179,12 +193,12 @@ func (handler *CentralSystemHandler) OnStopTransaction(chargePointId string, req
 	if !ok {
 		return nil, fmt.Errorf("unknown charge point %v", chargePointId)
 	}
-	transaction, ok := info.transactions[request.TransactionId]
+	transaction, ok := info.Transactions[request.TransactionId]
 	if ok {
-		connector := info.getConnector(transaction.connectorId)
-		connector.currentTransaction = -1
-		transaction.endTime = request.Timestamp
-		transaction.endMeter = request.MeterStop
+		connector := info.getConnector(transaction.ConnectorId)
+		connector.CurrentTransaction = -1
+		transaction.EndTime = request.Timestamp
+		transaction.EndMeter = request.MeterStop
 		//TODO: bill charging period to client
 	}
 	logDefault(chargePointId, request.GetFeatureName()).Infof("stopped transaction %v - %v", request.TransactionId, request.Reason)
@@ -233,13 +247,13 @@ func (handler *CentralSystemHandler) SetChargePointStart(chargePointID string) b
 	return success
 }
 
-func (handler *CentralSystemHandler) UnlockPort(chargePointID string, ConnID int) string {
-	handler.chargePoints[chargePointID].connectors[ConnID].unlockProgress = ""
+func (handler *CentralSystemHandler) UnlockPort(chargePointID string, ConnID int) {
+	handler.chargePoints[chargePointID].Connectors[ConnID].UnlockProgress = ""
 	callback4 := func(confirm *core.UnlockConnectorConfirmation, err error) {
-		handler.chargePoints[chargePointID].connectors[ConnID].unlockProgress = string(confirm.Status)
+		handler.chargePoints[chargePointID].Connectors[ConnID].UnlockProgress = string(confirm.Status)
 	}
 	centralSystem.UnlockConnector(chargePointID, callback4, ConnID) //Always 1 one JuiceME Chargers, but we just define one in case Param not given (in server.go)
-	return ""
+	return
 }
 
 func logDefault(chargePointId string, feature string) *logrus.Entry {
@@ -252,4 +266,35 @@ func (handler *CentralSystemHandler) chargePointByID(id string) (*ChargePointSta
 		return nil, fmt.Errorf("unknown charge point: %s", id)
 	}
 	return cp, nil
+}
+
+func (handler *CentralSystemHandler) SetConfig(id string, key string, value string) bool {
+	var success = false
+	log.Println(key)
+	log.Println(value)
+	softfail := 0
+	callback5 := func(confirmation *core.ChangeConfigurationConfirmation, err error) {
+		if err != nil {
+			logDefault(id, remotetrigger.TriggerMessageFeatureName).Errorf("error on request: %v", err)
+		} else if confirmation.Status == core.ConfigurationStatusAccepted {
+			logDefault(id, confirmation.GetFeatureName()).Infof("%v triggered successfully", core.ChangeConfigurationFeatureName)
+			success = true
+		} else if confirmation.Status == core.ConfigurationStatusRejected || confirmation.Status == core.ConfigurationStatusNotSupported {
+			logDefault(id, confirmation.GetFeatureName()).Infof("%v trigger was rejected", core.ChangeConfigurationFeatureName)
+		}
+	}
+	centralSystem.ChangeConfiguration(id, callback5, key, value)
+	for softfail < 10 {
+		softfail++
+		if success == true {
+			return success
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return success
+}
+
+func (handler *CentralSystemHandler) SinglePhaseForce(id string, connector int) bool {
+	//centralSystem.RemoteStartTransaction()
+	return false
 }

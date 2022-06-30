@@ -76,6 +76,17 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 		return
 	}
 
+	//set all value 0 for Power
+	cp := handler.chargePoints[chargePointID]
+	cp.Power.L1 = 0
+	cp.Power.L2 = 0
+	cp.Power.L3 = 0
+	cp.Power.Total = 0
+	cp.Currents.L1 = 0
+	cp.Currents.L2 = 0
+	cp.Currents.L3 = 0
+	//done, all Load Management values reset
+
 	// Wait
 	time.Sleep(waitinterval * time.Second)
 	// Trigger a heartbeat message
@@ -113,17 +124,16 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 	}
 	//Set to safe Charge Limit
 	time.Sleep(waitinterval * time.Second)
-	//callback4 := func(confirmation *remotetrigger.TriggerMessageConfirmation, err error) {
-	//	if err != nil {
-	//		logDefault(chargePointID, remotetrigger.TriggerMessageFeatureName).Errorf("error on request: %v", err)
-	//	} else if confirmation.Status == remotetrigger.TriggerMessageStatusAccepted {
-	//		logDefault(chargePointID, confirmation.GetFeatureName()).Infof("%v triggered successfully", "")
-	//	} else if confirmation.Status == remotetrigger.TriggerMessageStatusRejected {
-	//		logDefault(chargePointID, confirmation.GetFeatureName()).Infof("%v trigger was rejected", "")
-	//	}
-	//}
-	//e = centralSystem.TriggerMessage(chargePointID, callback3, smartcharging.)
-
+	success := handler.SetConfig(chargePointID, "DlmOperatorPhase1Limit", "8")
+	if success {
+		success = handler.SetConfig(chargePointID, "DlmOperatorPhase2Limit", "8")
+	}
+	if success {
+		success = handler.SetConfig(chargePointID, "DlmOperatorPhase3Limit", "8")
+	}
+	if !success {
+		log.Println("Error whilst setting safe current!!!!!!!!!!!!!!!!!!!!!")
+	}
 	///
 
 }
@@ -144,7 +154,7 @@ func main() {
 	centralSystem.SetSmartChargingHandler(handler)
 	// Add handlers for dis/connection of charge points
 	centralSystem.SetNewChargePointHandler(func(chargePoint ocpp16.ChargePointConnection) {
-		handler.chargePoints[chargePoint.ID()] = &ChargePointState{connectors: map[int]*ConnectorInfo{}, transactions: map[int]*TransactionInfo{}}
+		handler.chargePoints[chargePoint.ID()] = &ChargePointState{Connectors: map[int]*ConnectorInfo{}, Transactions: map[int]*TransactionInfo{}}
 		log.WithField("client", chargePoint.ID()).Info("new charge point connected")
 		go setupRoutine(chargePoint.ID(), handler)
 	})
