@@ -80,3 +80,14 @@ Get Diagnostics Example
 		logDefault(chargePointID, remotetrigger.TriggerMessageFeatureName).Errorf("couldn't send message: %v", e)
 		return
 	}
+
+
+ChargePointSetup
+
+1. Name of ChargePoint MUST be unique
+2. 1st character represents the charge groupd for load management
+3. max lenght is 32 characters
+
+
+System supports Autocharge
+

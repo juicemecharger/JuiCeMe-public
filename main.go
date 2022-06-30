@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"time"
 
 	ocpp16 "github.com/lorenzodonini/ocpp-go/ocpp1.6"
@@ -16,11 +19,13 @@ const (
 	defaultListenPort        = 8887
 	defaultHeartbeatInterval = 60
 	waitinterval             = 5
-	version                  = "0.1.2"
+	version                  = "0.1.3"
+	authlistfilename         = "authlist.json"
 )
 
 var log *logrus.Logger
 var centralSystem ocpp16.CentralSystem
+var authlist map[string]bool
 
 func setupCentralSystem() ocpp16.CentralSystem {
 	return ocpp16.NewCentralSystem(nil, nil)
@@ -140,12 +145,17 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 
 // Start function
 func main() {
+	authFile, _ := ioutil.ReadFile(authlistfilename)
+	_ = json.Unmarshal(authFile, &authlist)
+	//vars
+	groupsInitialized := make(map[string]bool)
+	chargepointInitialized := make(map[string]bool)
 	// Load config from ENV
 	var listenPort = defaultListenPort
 	// Prepare OCPP 1.6 central system
 	centralSystem = setupCentralSystem()
 	// Support callbacks for all OCPP 1.6 profiles
-	handler := &CentralSystemHandler{chargePoints: map[string]*ChargePointState{}}
+	handler := &CentralSystemHandler{chargePoints: map[string]*ChargePointState{}, groups: map[string]*Group{}}
 	centralSystem.SetCoreHandler(handler)
 	centralSystem.SetLocalAuthListHandler(handler)
 	centralSystem.SetFirmwareManagementHandler(handler)
@@ -154,13 +164,27 @@ func main() {
 	centralSystem.SetSmartChargingHandler(handler)
 	// Add handlers for dis/connection of charge points
 	centralSystem.SetNewChargePointHandler(func(chargePoint ocpp16.ChargePointConnection) {
-		handler.chargePoints[chargePoint.ID()] = &ChargePointState{Connectors: map[int]*ConnectorInfo{}, Transactions: map[int]*TransactionInfo{}}
+		if !chargepointInitialized[chargePoint.ID()] {
+			handler.chargePoints[chargePoint.ID()] = &ChargePointState{Connectors: map[int]*ConnectorInfo{}, Transactions: map[int]*TransactionInfo{}}
+		}
 		log.WithField("client", chargePoint.ID()).Info("new charge point connected")
+		groupdid := string([]rune(chargePoint.ID())[0])
+		log.Println(groupdid)
+		if !groupsInitialized[groupdid] {
+			handler.groups[groupdid] = &Group{Chargers: map[string]string{}}
+			handler.groups[groupdid].Chargers[chargePoint.ID()] = "true"
+			groupsInitialized[groupdid] = true
+		} else {
+			handler.groups[groupdid].Chargers[chargePoint.ID()] = "true"
+		}
 		go setupRoutine(chargePoint.ID(), handler)
 	})
 	centralSystem.SetChargePointDisconnectedHandler(func(chargePoint ocpp16.ChargePointConnection) {
 		log.WithField("client", chargePoint.ID()).Info("charge point disconnected")
-		delete(handler.chargePoints, chargePoint.ID())
+		//delete(handler.chargePoints, chargePoint.ID())
+		handler.chargePoints[chargePoint.ID()].Status = core.ChargePointStatusUnavailable
+		groupdid := string([]rune(chargePoint.ID())[0])
+		delete(handler.groups[groupdid].Chargers, chargePoint.ID())
 	})
 	ocppj.SetLogger(log.WithField("logger", "ocppj"))
 	//ws.Server.Errors()
@@ -170,6 +194,12 @@ func main() {
 	go handler.Listen(version)
 	centralSystem.Start(listenPort, "/{ws}")
 	log.Info("stopped central system")
+	defer func() {
+		fmt.Println("Saving Files to Disk (Persistence)")
+		authlistjson, _ := json.MarshalIndent(authlist, "", " ")
+
+		_ = ioutil.WriteFile(authlistfilename, authlistjson, 0644)
+	}()
 }
 
 func init() {

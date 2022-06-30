@@ -14,8 +14,18 @@ import (
 
 var (
 	nextTransactionId = 0
-	//modclient         *modbus.ModbusClient //because bmw we dont
 )
+
+type Group struct {
+	Chargers    map[string]string
+	MaxL1       uint
+	MaxL2       uint
+	MaxL3       uint
+	CurrentL1   uint
+	CurrentL2   uint
+	CurrentL3   uint
+	Initialized bool
+}
 
 // TransactionInfo contains info about a transaction
 type TransactionInfo struct {
@@ -56,14 +66,10 @@ func (ci *ConnectorInfo) hasTransactionInProgress() bool {
 	return ci.CurrentTransaction >= 0
 }
 
-type jsondata struct {
-	Data map[string]cardstruct
-}
-
-type cardstruct struct {
-	Authorized   string
-	Transactions []TransactionInfo
-}
+//type CardStruct struct {
+//	Authorized   string
+//	Transactions []TransactionInfo
+//}
 
 // ChargePointState contains all relevant state data for a connected charge point, simplified only working with single-connector chargepoints
 type ChargePointState struct {
@@ -87,10 +93,10 @@ func (cps *ChargePointState) getConnector(id int) *ConnectorInfo {
 	return ci
 }
 
-// CentralSystemHandler contains some simple state that a central system may want to keep.
-// In production this will typically be replaced by database/API calls.
+// CentralSystemHandler contains  state that central system wants to keep.
 type CentralSystemHandler struct {
 	chargePoints map[string]*ChargePointState
+	groups       map[string]*Group
 	version      string
 }
 
@@ -238,13 +244,21 @@ func (handler *CentralSystemHandler) GetChargePointList() map[string]*ChargePoin
 	return handler.chargePoints
 }
 
+func (handler *CentralSystemHandler) GetSystemState() map[string]interface{} {
+	reply := make(map[string]interface{})
+	reply["chargePoints"] = handler.chargePoints
+	reply["groups"] = handler.groups
+	return reply
+}
+
 func (handler *CentralSystemHandler) SetChargePointStart(chargePointID string) bool {
-	success := true
+	//success := true
+	println(chargePointID)
 	//callback3 := func(confirmation *core.RemoteStartTransactionConfirmation, err error) {
 	//	log.Println("Confirmation")
 	//}
 	//centralSystem.
-	return success
+	return true
 }
 
 func (handler *CentralSystemHandler) UnlockPort(chargePointID string, ConnID int) {
@@ -252,7 +266,7 @@ func (handler *CentralSystemHandler) UnlockPort(chargePointID string, ConnID int
 	callback4 := func(confirm *core.UnlockConnectorConfirmation, err error) {
 		handler.chargePoints[chargePointID].Connectors[ConnID].UnlockProgress = string(confirm.Status)
 	}
-	centralSystem.UnlockConnector(chargePointID, callback4, ConnID) //Always 1 one JuiceME Chargers, but we just define one in case Param not given (in server.go)
+	_ = centralSystem.UnlockConnector(chargePointID, callback4, ConnID) //Always 1 one JuiceME Chargers, but we just define one in case Param not given (in server.go)
 	return
 }
 
@@ -283,7 +297,7 @@ func (handler *CentralSystemHandler) SetConfig(id string, key string, value stri
 			logDefault(id, confirmation.GetFeatureName()).Infof("%v trigger was rejected", core.ChangeConfigurationFeatureName)
 		}
 	}
-	centralSystem.ChangeConfiguration(id, callback5, key, value)
+	_ = centralSystem.ChangeConfiguration(id, callback5, key, value)
 	for softfail < 10 {
 		softfail++
 		if success == true {
@@ -292,9 +306,4 @@ func (handler *CentralSystemHandler) SetConfig(id string, key string, value stri
 		time.Sleep(500 * time.Millisecond)
 	}
 	return success
-}
-
-func (handler *CentralSystemHandler) SinglePhaseForce(id string, connector int) bool {
-	//centralSystem.RemoteStartTransaction()
-	return false
 }

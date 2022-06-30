@@ -59,6 +59,9 @@ func (handler *CentralSystemHandler) api(w http.ResponseWriter, r *http.Request)
 	case "getChargePoints":
 		chargepointlist := handler.GetChargePointList()
 		reply.Result = chargepointlist
+	case "getSystemState":
+		statelist := handler.GetSystemState()
+		reply.Result = statelist
 	case "setChargePointStart":
 		chargepointid := req.Params[0]
 		reply.Result = "true"
