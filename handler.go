@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/remotetrigger"
@@ -107,13 +108,45 @@ type CentralSystemHandler struct {
 
 func (handler *CentralSystemHandler) OnAuthorize(chargePointId string, request *core.AuthorizeRequest) (confirmation *core.AuthorizeConfirmation, err error) {
 	var authorized types.AuthorizationStatus
-	log.Printf("ID_TAG: " + request.IdTag)
-	if request.IdTag == "113e0236" || request.IdTag == "40b66b7c" || request.IdTag == "bd52b9a0" || request.IdTag == "DC442718546C" {
-		authorized = types.AuthorizationStatusAccepted
-	} else {
-		authorized = types.AuthorizationStatusBlocked
+	isMac := false
+	idwithoutMac := strings.Replace(request.IdTag, "MAC", "", -1)
+	log.Printf("ID_TAG: " + idwithoutMac)
+	if (string([]rune(request.IdTag)[0]) == "M") && (string([]rune(request.IdTag)[1]) == "A") && (string([]rune(request.IdTag)[2]) == "C") {
+		isMac = true
 	}
-	logDefault(chargePointId, request.GetFeatureName()).Infof("client authorized")
+
+	if isMac {
+		_, exists := identity.MACs[idwithoutMac]
+		if exists {
+			if identity.MACs[idwithoutMac].Authorized {
+				authorized = types.AuthorizationStatusAccepted
+				logDefault(chargePointId, request.GetFeatureName()).Infof("mac authorized")
+			} else {
+				authorized = types.AuthorizationStatusExpired
+				logDefault(chargePointId, request.GetFeatureName()).Infof("mac blocked")
+			}
+		} else {
+			authorized = types.AuthorizationStatusBlocked
+			logDefault(chargePointId, request.GetFeatureName()).Infof("mac not in list")
+		}
+
+	} else {
+		_, exists := identity.Cards[request.IdTag]
+		if exists {
+			if identity.MACs[idwithoutMac].Authorized {
+				authorized = types.AuthorizationStatusAccepted
+				logDefault(chargePointId, request.GetFeatureName()).Infof("card authorized")
+			} else {
+				authorized = types.AuthorizationStatusExpired
+				logDefault(chargePointId, request.GetFeatureName()).Infof("card blocked")
+			}
+		} else {
+			authorized = types.AuthorizationStatusBlocked
+			logDefault(chargePointId, request.GetFeatureName()).Infof("card not in list")
+		}
+
+	}
+
 	return core.NewAuthorizationConfirmation(types.NewIdTagInfo(authorized)), nil
 }
 
@@ -251,6 +284,7 @@ func (handler *CentralSystemHandler) GetSystemState() map[string]interface{} {
 	reply := make(map[string]interface{})
 	reply["chargePoints"] = handler.chargePoints
 	reply["groups"] = handler.groups
+	reply["identities"] = identity
 	return reply
 }
 

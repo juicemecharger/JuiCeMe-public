@@ -1,18 +1,33 @@
 {
   "cards": {
-  "cardid1":{
+  "113e0236":{
+    "name" : "juiceCard",
     "tx_list":{},
     "authorized":true,
     "energy_charged":12345
   },
-  "cardid2":{
-    "tx_list":{},
-    "authorized":true,
-    "energy_charged":6942069
-  }
+    "40b66b7c":{
+      "name": "berndDasBrot",
+      "tx_list":{},
+      "authorized":true,
+      "energy_charged":6942069
+  },
+    "bd52b9a0":{
+      "name": "joshiCard",
+      "tx_list":{},
+      "authorized":true,
+      "energy_charged":6942069
+    },
+    "108bf37b":{
+      "name": "michelCard",
+      "tx_list":{},
+      "authorized":true,
+      "energy_charged":6942069
+    }
   },
   "macs":{
-    "mac1":{
+    "DC442718546C":{
+      "name": "berndTeslaModel3",
       "tx_list":{},
       "authorized":true,
       "energy_charged":12345
