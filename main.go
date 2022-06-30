@@ -19,8 +19,8 @@ const (
 	defaultListenPort        = 8887
 	defaultHeartbeatInterval = 60
 	waitinterval             = 5
-	version                  = "0.1.3"
-	authlistfilename         = "authlist.json"
+	version                  = "0.1.4"
+	authlistfilename         = "ident.json"
 )
 
 var log *logrus.Logger
