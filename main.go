@@ -25,7 +25,18 @@ const (
 
 var log *logrus.Logger
 var centralSystem ocpp16.CentralSystem
-var authlist map[string]bool
+var identity ident
+
+type ident struct {
+	Cards map[string]authIdStruct `json:"cards"`
+	MACs  map[string]authIdStruct `json:"macs"`
+}
+
+type authIdStruct struct {
+	TXList        map[string]TransactionInfo `json:"tx_list"`
+	Authorized    bool                       `json:"authorized"`
+	EnergyCharged int64                      `json:"energy_charged"`
+}
 
 func setupCentralSystem() ocpp16.CentralSystem {
 	return ocpp16.NewCentralSystem(nil, nil)
@@ -37,12 +48,9 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 	var KeyMeterValuesSampledData = "MeterValuesSampledData"
 	var KeyMeterValueSampleInterval = "MeterValueSampleInterval"
 	var MeterSampleInterval = "10"
+
 	//Wait
 	time.Sleep(waitinterval * time.Second)
-	//moved up
-	//configKey := "MeterValueSampleInterval"
-	//configValue := "10"
-
 	// Change meter sampling values time
 	callback1 := func(confirmation *core.ChangeConfigurationConfirmation, err error) {
 		if err != nil {
@@ -127,7 +135,7 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 		logDefault(chargePointID, remotetrigger.TriggerMessageFeatureName).Errorf("couldn't send message: %v", e)
 		return
 	}
-	//Set to safe Charge Limit
+	//Start Set to safe Charge Limit
 	time.Sleep(waitinterval * time.Second)
 	success := handler.SetConfig(chargePointID, "DlmOperatorPhase1Limit", "8")
 	if success {
@@ -139,18 +147,19 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 	if !success {
 		log.Println("Error whilst setting safe current!!!!!!!!!!!!!!!!!!!!!")
 	}
-	///
+	///End Set to safe Charge Limit
 
 }
 
 // Start function
 func main() {
+	//Persistence of cards/evccid(pefix "MAC")
 	authFile, _ := ioutil.ReadFile(authlistfilename)
-	_ = json.Unmarshal(authFile, &authlist)
-	//vars
+	_ = json.Unmarshal(authFile, &identity)
+	//Vars for remembering what has been initialized
 	groupsInitialized := make(map[string]bool)
 	chargepointInitialized := make(map[string]bool)
-	// Load config from ENV
+	// Load config from const
 	var listenPort = defaultListenPort
 	// Prepare OCPP 1.6 central system
 	centralSystem = setupCentralSystem()
@@ -196,7 +205,7 @@ func main() {
 	log.Info("stopped central system")
 	defer func() {
 		fmt.Println("Saving Files to Disk (Persistence)")
-		authlistjson, _ := json.MarshalIndent(authlist, "", " ")
+		authlistjson, _ := json.MarshalIndent(identity, "", " ")
 
 		_ = ioutil.WriteFile(authlistfilename, authlistjson, 0644)
 	}()

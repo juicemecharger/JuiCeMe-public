@@ -1,4 +1,26 @@
 {
-  "CardId1": true,
-  "CardId2": true
+  "cards": {
+  "cardid1":{
+    "tx_list":{},
+    "authorized":true,
+    "energy_charged":12345
+  },
+  "cardid2":{
+    "tx_list":{},
+    "authorized":true,
+    "energy_charged":6942069
+  }
+  },
+  "macs":{
+    "mac1":{
+      "tx_list":{},
+      "authorized":true,
+      "energy_charged":12345
+    },
+    "mac2":{
+      "tx_list":{},
+      "authorized":true,
+      "energy_charged":6942069
+    }
+  }
 }

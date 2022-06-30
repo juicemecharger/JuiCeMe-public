@@ -95,9 +95,12 @@ func (cps *ChargePointState) getConnector(id int) *ConnectorInfo {
 
 // CentralSystemHandler contains  state that central system wants to keep.
 type CentralSystemHandler struct {
-	chargePoints map[string]*ChargePointState
-	groups       map[string]*Group
-	version      string
+	chargePoints   map[string]*ChargePointState
+	groups         map[string]*Group
+	CurrentTotalL1 uint
+	CurrentTotalL2 uint
+	CurrentTotalL3 uint
+	version        string
 }
 
 // ------------- Core profile callbacks -------------
