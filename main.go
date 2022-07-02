@@ -137,12 +137,12 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 	}
 	//Start Set to safe Charge Limit
 	time.Sleep(waitinterval * time.Second)
-	success := handler.SetConfig(chargePointID, "DlmOperatorPhase1Limit", "8")
+	success := handler.SetConfig(chargePointID, "DlmOperatorPhase1Limit", "0")
 	if success {
-		success = handler.SetConfig(chargePointID, "DlmOperatorPhase2Limit", "8")
+		success = handler.SetConfig(chargePointID, "DlmOperatorPhase2Limit", "0")
 	}
 	if success {
-		success = handler.SetConfig(chargePointID, "DlmOperatorPhase3Limit", "8")
+		success = handler.SetConfig(chargePointID, "DlmOperatorPhase3Limit", "0")
 	}
 	if !success {
 		log.Println("Error whilst setting safe current!!!!!!!!!!!!!!!!!!!!!")
@@ -180,7 +180,7 @@ func main() {
 		groupdid := string([]rune(chargePoint.ID())[0])
 		log.Println(groupdid)
 		if !groupsInitialized[groupdid] {
-			handler.groups[groupdid] = &Group{Chargers: map[string]string{}}
+			handler.groups[groupdid] = &Group{Chargers: map[string]string{}, MaxL1: 32, MaxL2: 32, MaxL3: 32}
 			handler.groups[groupdid].Chargers[chargePoint.ID()] = "true"
 			groupsInitialized[groupdid] = true
 		} else {
@@ -201,6 +201,7 @@ func main() {
 	// Run central system
 	log.Infof("starting central system on port %v", listenPort)
 	go handler.Listen(version)
+	go handler.dlmstart()
 	centralSystem.Start(listenPort, "/{ws}")
 	log.Info("stopped central system")
 	defer func() {

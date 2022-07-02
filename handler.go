@@ -79,6 +79,7 @@ type ChargePointState struct {
 	firmwareStatus    firmware.FirmwareStatus
 	Connectors        map[int]*ConnectorInfo // No assumptions about the # of connectors && In case of Bender / JuiceME , #1 is the only connector
 	Currents          PortCurrents
+	CurrentAssigned   PortCurrents
 	Power             PortPower
 	lastTimeStamp     *types.DateTime
 	Transactions      map[int]*TransactionInfo
@@ -121,6 +122,7 @@ func (handler *CentralSystemHandler) OnAuthorize(chargePointId string, request *
 			if identity.MACs[idwithoutMac].Authorized {
 				authorized = types.AuthorizationStatusAccepted
 				logDefault(chargePointId, request.GetFeatureName()).Infof("mac authorized")
+				go handler.AssignPowerOnAuth(chargePointId)
 			} else {
 				authorized = types.AuthorizationStatusExpired
 				logDefault(chargePointId, request.GetFeatureName()).Infof("mac blocked")
@@ -133,9 +135,10 @@ func (handler *CentralSystemHandler) OnAuthorize(chargePointId string, request *
 	} else {
 		_, exists := identity.Cards[request.IdTag]
 		if exists {
-			if identity.MACs[idwithoutMac].Authorized {
+			if identity.Cards[request.IdTag].Authorized {
 				authorized = types.AuthorizationStatusAccepted
 				logDefault(chargePointId, request.GetFeatureName()).Infof("card authorized")
+				go handler.AssignPowerOnAuth(chargePointId)
 			} else {
 				authorized = types.AuthorizationStatusExpired
 				logDefault(chargePointId, request.GetFeatureName()).Infof("card blocked")
