@@ -98,7 +98,7 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 	cp.Currents.L1 = 0
 	cp.Currents.L2 = 0
 	cp.Currents.L3 = 0
-	//done, all Load Management values reset
+	//done, all Load values reset
 
 	// Wait
 	time.Sleep(waitinterval * time.Second)
@@ -135,7 +135,7 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 		logDefault(chargePointID, remotetrigger.TriggerMessageFeatureName).Errorf("couldn't send message: %v", e)
 		return
 	}
-	//Start Set to safe Charge Limit
+	//Start Set to safe Charge Limit, so in case something breaks whilst dlm its doing its stuff we don't trip a breaker, lulz
 	time.Sleep(waitinterval * time.Second)
 	success := handler.SetConfig(chargePointID, "DlmOperatorPhase1Limit", "0")
 	if success {
@@ -145,7 +145,7 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 		success = handler.SetConfig(chargePointID, "DlmOperatorPhase3Limit", "0")
 	}
 	if !success {
-		log.Println("Error whilst setting safe current!!!!!!!!!!!!!!!!!!!!!")
+		log.Println("Error whilst setting safe current!!!!!!!!!!!!!!!!!!!!!") //maybe something here to stop autorization on that guy until its manually solved
 	}
 	///End Set to safe Charge Limit
 

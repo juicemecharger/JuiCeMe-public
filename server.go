@@ -62,27 +62,34 @@ func (handler *CentralSystemHandler) api(w http.ResponseWriter, r *http.Request)
 	case "getSystemState":
 		statelist := handler.GetSystemState()
 		reply.Result = statelist
-	case "setChargePointStart":
-		chargepointid := req.Params[0]
+	case "remoteStartTransaction":
+		var idtag string
+		chargePointID := req.Params[0]
+		if len(req.Params) > 1 {
+			idtag = req.Params[1]
+
+		} else {
+			idtag = "noIDSet"
+		}
 		reply.Result = "true"
-		handler.SetChargePointStart(chargepointid)
+		handler.SetChargePointRemoteStart(chargePointID, idtag)
 	case "unlockConnector":
-		var connectorid int
+		var connectorID int
 		confirmation := "false"
 		timeout := 0
 		if len(req.Params) > 1 {
-			connectorid, _ = strconv.Atoi(req.Params[1])
+			connectorID, _ = strconv.Atoi(req.Params[1])
 
 		} else {
-			connectorid = 1
+			connectorID = 1
 		}
-		handler.chargePoints[req.Params[0]].Connectors[connectorid].UnlockProgress = ""
-		go handler.UnlockPort(req.Params[0], connectorid)
+		handler.chargePoints[req.Params[0]].Connectors[connectorID].UnlockProgress = ""
+		go handler.UnlockPort(req.Params[0], connectorID)
 		for timeout < 10 {
 			timeout++
 			time.Sleep(5 * time.Millisecond)
-			if handler.chargePoints[req.Params[0]].Connectors[connectorid].UnlockProgress != "" {
-				confirmation = handler.chargePoints[req.Params[0]].Connectors[connectorid].UnlockProgress
+			if handler.chargePoints[req.Params[0]].Connectors[connectorID].UnlockProgress != "" {
+				confirmation = handler.chargePoints[req.Params[0]].Connectors[connectorID].UnlockProgress
 				break
 			}
 			time.Sleep(500 * time.Millisecond)

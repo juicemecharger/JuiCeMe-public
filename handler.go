@@ -291,14 +291,14 @@ func (handler *CentralSystemHandler) GetSystemState() map[string]interface{} {
 	return reply
 }
 
-func (handler *CentralSystemHandler) SetChargePointStart(chargePointID string) bool {
-	//success := true
+func (handler *CentralSystemHandler) SetChargePointRemoteStart(chargePointID string, idtag string) bool {
+	success := true
 	println(chargePointID)
-	//callback3 := func(confirmation *core.RemoteStartTransactionConfirmation, err error) {
-	//	log.Println("Confirmation")
-	//}
-	//centralSystem.
-	return true
+	callback3 := func(confirmation *core.RemoteStartTransactionConfirmation, err error) {
+		log.Println("Confirmation")
+	}
+	centralSystem.RemoteStartTransaction(chargePointID, callback3, idtag)
+	return success
 }
 
 func (handler *CentralSystemHandler) UnlockPort(chargePointID string, ConnID int) {
