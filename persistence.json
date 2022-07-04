@@ -1,0 +1,158 @@
+{
+ "charge_points": {
+  "2ladeplatz5": {
+   "status": "Available",
+   "connectors": {
+    "1": {
+     "status": "Charging",
+     "info": "Energy is flowing to vehicle",
+     "unlock_progress": "",
+     "current_transaction": 3,
+     "done_charging": false
+    }
+   },
+   "currents": {
+    "l1": 6,
+    "l2": 6,
+    "l3": 6
+   },
+   "current_assigned": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_offered": 6,
+   "power": {
+    "l1": 1414,
+    "l2": 1418,
+    "l3": 1391,
+    "total": 4223
+   },
+   "energy_meter_current": 25300,
+   "error_code": "NoError"
+  },
+  "2ladeplatz6": {
+   "status": "Available",
+   "connectors": {
+    "1": {
+     "status": "Charging",
+     "info": "No energy flowing to vehicle",
+     "unlock_progress": "",
+     "current_transaction": 2,
+     "done_charging": false
+    }
+   },
+   "currents": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_assigned": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_offered": 0,
+   "power": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0,
+    "total": 0
+   },
+   "energy_meter_current": 17800,
+   "error_code": "NoError"
+  },
+  "2ladeplatz7": {
+   "status": "Unavailable",
+   "connectors": {
+    "1": {
+     "status": "Charging",
+     "info": "Status Update -Type2-",
+     "unlock_progress": "",
+     "current_transaction": 0,
+     "done_charging": false
+    }
+   },
+   "currents": {
+    "l1": 6,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_assigned": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_offered": 6,
+   "power": {
+    "l1": 1343,
+    "l2": 0,
+    "l3": 0,
+    "total": 1343
+   },
+   "energy_meter_current": 8800,
+   "error_code": "NoError"
+  },
+  "2ladeplatz8": {
+   "status": "Available",
+   "connectors": {
+    "1": {
+     "status": "Available",
+     "info": "No energy flowing to vehicle",
+     "unlock_progress": "",
+     "current_transaction": -1,
+     "done_charging": false
+    }
+   },
+   "currents": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_assigned": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_offered": 0,
+   "power": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0,
+    "total": 0
+   },
+   "energy_meter_current": 100,
+   "error_code": "NoError"
+  }
+ },
+ "groups": {
+  "2": {
+   "chargers": {
+    "2ladeplatz5": "true",
+    "2ladeplatz6": "true",
+    "2ladeplatz8": "true"
+   },
+   "max_l1": 32,
+   "max_l2": 32,
+   "max_l3": 32,
+   "current_l1": 0,
+   "current_l2": 0,
+   "current_l3": 0,
+   "initialized": false
+  }
+ },
+ "current_total_l_1": 0,
+ "current_total_l_2": 0,
+ "current_total_l_3": 0,
+ "groups_initialized": {
+  "2": true
+ },
+ "charge_points_initialized": {
+  "2ladeplatz5": true,
+  "2ladeplatz6": true,
+  "2ladeplatz7": true,
+  "2ladeplatz8": true
+ },
+ "transactions": {},
+ "next_transaction_id": 1000000
+}

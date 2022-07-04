@@ -1,41 +1,42 @@
 {
-  "cards": {
-  "113e0236":{
-    "name" : "juiceCard",
-    "tx_list":{},
-    "authorized":true,
-    "energy_charged":12345
+ "cards": {
+  "108bf37b": {
+   "tx_list": {},
+   "authorized": true,
+   "energy_charged": 6942069,
+   "current_session": 0
   },
-    "40b66b7c":{
-      "name": "berndDasBrot",
-      "tx_list":{},
-      "authorized":true,
-      "energy_charged":6942069
+  "113e0236": {
+   "tx_list": {},
+   "authorized": true,
+   "energy_charged": 12345,
+   "current_session": 0
   },
-    "bd52b9a0":{
-      "name": "joshiCard",
-      "tx_list":{},
-      "authorized":true,
-      "energy_charged":6942069
-    },
-    "108bf37b":{
-      "name": "michelCard",
-      "tx_list":{},
-      "authorized":true,
-      "energy_charged":6942069
-    }
+  "40b66b7c": {
+   "tx_list": {},
+   "authorized": true,
+   "energy_charged": 6942069,
+   "current_session": 0
   },
-  "macs":{
-    "DC442718546C":{
-      "name": "berndTeslaModel3",
-      "tx_list":{},
-      "authorized":true,
-      "energy_charged":12345
-    },
-    "mac2":{
-      "tx_list":{},
-      "authorized":true,
-      "energy_charged":6942069
-    }
+  "bd52b9a0": {
+   "tx_list": {},
+   "authorized": true,
+   "energy_charged": 6942069,
+   "current_session": 0
   }
+ },
+ "macs": {
+  "001823375907": {
+   "tx_list": {},
+   "authorized": true,
+   "energy_charged": 12345,
+   "current_session": 0
+  },
+  "DC442718546C": {
+   "tx_list": {},
+   "authorized": true,
+   "energy_charged": 12345,
+   "current_session": 0
+  }
+ }
 }

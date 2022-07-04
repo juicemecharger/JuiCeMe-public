@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,30 +14,26 @@ import (
 	"github.com/lorenzodonini/ocpp-go/ocpp1.6/types"
 )
 
-var (
-	nextTransactionId = 0
-)
-
 type Group struct {
-	Chargers    map[string]string
-	MaxL1       uint
-	MaxL2       uint
-	MaxL3       uint
-	CurrentL1   uint
-	CurrentL2   uint
-	CurrentL3   uint
-	Initialized bool
+	Chargers    map[string]string `json:"chargers"`
+	MaxL1       int               `json:"max_l1"`
+	MaxL2       int               `json:"max_l2"`
+	MaxL3       int               `json:"max_l3"`
+	CurrentL1   int               `json:"current_l1"`
+	CurrentL2   int               `json:"current_l2"`
+	CurrentL3   int               `json:"current_l3"`
+	Initialized bool              `json:"initialized"`
 }
 
 // TransactionInfo contains info about a transaction
 type TransactionInfo struct {
-	Id          int
-	StartTime   *types.DateTime
-	EndTime     *types.DateTime
-	StartMeter  int
-	EndMeter    int
-	ConnectorId int
-	IdTag       string
+	Id          string          `json:"id"`
+	StartTime   *types.DateTime `json:"start_time"`
+	EndTime     *types.DateTime `json:"end_time"`
+	StartMeter  int             `json:"start_meter"`
+	EndMeter    int             `json:"end_meter"`
+	ConnectorId int             `json:"connector_id"`
+	IdTag       string          `json:"id_tag"`
 }
 
 func (ti *TransactionInfo) hasTransactionEnded() bool {
@@ -45,22 +42,24 @@ func (ti *TransactionInfo) hasTransactionEnded() bool {
 
 // ConnectorInfo contains status and ongoing transaction ID for a connector
 type ConnectorInfo struct {
-	Status             core.ChargePointStatus
-	UnlockProgress     string
-	CurrentTransaction int
+	Status             core.ChargePointStatus `json:"status"`
+	Info               string                 `json:"info"`
+	UnlockProgress     string                 `json:"unlock_progress"`
+	CurrentTransaction int                    `json:"current_transaction"`
+	DoneCharging       bool                   `json:"done_charging"`
 }
 
 type PortCurrents struct {
-	L1 uint
-	L2 uint
-	L3 uint
+	L1 int `json:"l1"`
+	L2 int `json:"l2"`
+	L3 int `json:"l3"`
 }
 
 type PortPower struct {
-	L1    uint
-	L2    uint
-	L3    uint
-	Total uint
+	L1    int `json:"l1"`
+	L2    int `json:"l2"`
+	L3    int `json:"l3"`
+	Total int `json:"total"`
 }
 
 func (ci *ConnectorInfo) hasTransactionInProgress() bool {
@@ -74,16 +73,17 @@ func (ci *ConnectorInfo) hasTransactionInProgress() bool {
 
 // ChargePointState contains all relevant state data for a connected charge point, simplified only working with single-connector chargepoints
 type ChargePointState struct {
-	Status            core.ChargePointStatus
-	diagnosticsStatus firmware.DiagnosticsStatus
-	firmwareStatus    firmware.FirmwareStatus
-	Connectors        map[int]*ConnectorInfo // No assumptions about the # of connectors && In case of Bender / JuiceME , #1 is the only connector
-	Currents          PortCurrents
-	CurrentAssigned   PortCurrents
-	Power             PortPower
-	lastTimeStamp     *types.DateTime
-	Transactions      map[int]*TransactionInfo
-	ErrorCode         core.ChargePointErrorCode
+	Status             core.ChargePointStatus `json:"status"`
+	diagnosticsStatus  firmware.DiagnosticsStatus
+	firmwareStatus     firmware.FirmwareStatus
+	Connectors         map[int]*ConnectorInfo `json:"connectors"`
+	Currents           PortCurrents           `json:"currents"`
+	CurrentAssigned    PortCurrents           `json:"current_assigned"`
+	CurrentOffered     int                    `json:"current_offered"`
+	Power              PortPower              `json:"power"`
+	EnergyMeterCurrent int64                  `json:"energy_meter_current"`
+	lastTimeStamp      *types.DateTime
+	ErrorCode          core.ChargePointErrorCode `json:"error_code"`
 }
 
 func (cps *ChargePointState) getConnector(id int) *ConnectorInfo {
@@ -97,12 +97,17 @@ func (cps *ChargePointState) getConnector(id int) *ConnectorInfo {
 
 // CentralSystemHandler contains  state that central system wants to keep.
 type CentralSystemHandler struct {
-	chargePoints   map[string]*ChargePointState
-	groups         map[string]*Group
-	CurrentTotalL1 uint
-	CurrentTotalL2 uint
-	CurrentTotalL3 uint
-	version        string
+	ChargePoints            map[string]*ChargePointState `json:"charge_points"`
+	Groups                  map[string]*Group            `json:"groups"`
+	CurrentTotalL1          int                          `json:"current_total_l_1"`
+	CurrentTotalL2          int                          `json:"current_total_l_2"`
+	CurrentTotalL3          int                          `json:"current_total_l_3"`
+	GroupsInitialized       map[string]bool              `json:"groups_initialized"`
+	ChargePointsInitialized map[string]bool              `json:"charge_points_initialized"`
+	Transactions            map[int]*TransactionInfo     `json:"transactions"`
+	version                 string
+	NextTransactionID       int `json:"next_transaction_id"`
+	debug                   bool
 }
 
 // ------------- Core profile callbacks -------------
@@ -170,14 +175,56 @@ func (handler *CentralSystemHandler) OnHeartbeat(chargePointId string, request *
 
 func (handler *CentralSystemHandler) OnMeterValues(chargePointId string, request *core.MeterValuesRequest) (confirmation *core.MeterValuesConfirmation, err error) {
 	logDefault(chargePointId, request.GetFeatureName()).Infof("received meter values for connector %v. Meter values:\n", request.ConnectorId)
-	for _, mv := range request.MeterValue {
+	for _, mv := range request.MeterValue { //expect that only one meterValue per request is sent
 		logDefault(chargePointId, request.GetFeatureName()).Printf("%v", mv)
+		for _, sv := range mv.SampledValue {
+			if handler.debug {
+				log.Println("---------------------------")
+				log.Println("SVV--" + sv.Value)
+				log.Println("SVF--" + sv.Format)
+				log.Println("SVC--" + sv.Context)
+				log.Println("SVL--" + sv.Location)
+				log.Println("SVP--" + sv.Phase)
+				log.Println("SVM--" + sv.Measurand)
+				log.Println("SVU--" + sv.Unit)
+				log.Println("---------------------------")
+			}
+			switch sv.Measurand {
+			case "Power.Active.Import":
+				switch sv.Phase {
+				case "L1":
+					handler.ChargePoints[chargePointId].Power.L1, _ = strconv.Atoi(sv.Value)
+				case "L2":
+					handler.ChargePoints[chargePointId].Power.L2, _ = strconv.Atoi(sv.Value)
+				case "L3":
+					handler.ChargePoints[chargePointId].Power.L3, _ = strconv.Atoi(sv.Value)
+				default:
+					handler.ChargePoints[chargePointId].Power.Total, _ = strconv.Atoi(sv.Value)
+				}
+			case "Current.Offered":
+				handler.ChargePoints[chargePointId].CurrentOffered, _ = strconv.Atoi(sv.Value)
+			case "Current.Import":
+				switch sv.Phase {
+				case "L1":
+					handler.ChargePoints[chargePointId].Currents.L1, _ = strconv.Atoi(sv.Value)
+				case "L2":
+					handler.ChargePoints[chargePointId].Currents.L2, _ = strconv.Atoi(sv.Value)
+				case "L3":
+					handler.ChargePoints[chargePointId].Currents.L3, _ = strconv.Atoi(sv.Value)
+				default:
+					log.Printf("Unexpected meterValue from %v", chargePointId)
+				}
+			case "Energy.Active.Import.Register":
+				handler.ChargePoints[chargePointId].EnergyMeterCurrent, _ = strconv.ParseInt(sv.Value, 10, 64)
+			}
+
+		}
 	}
 	return core.NewMeterValuesConfirmation(), nil
 }
 
 func (handler *CentralSystemHandler) OnStatusNotification(chargePointId string, request *core.StatusNotificationRequest) (confirmation *core.StatusNotificationConfirmation, err error) {
-	info, ok := handler.chargePoints[chargePointId]
+	info, ok := handler.ChargePoints[chargePointId]
 	if !ok {
 		return nil, fmt.Errorf("unknown charge point %v", chargePointId)
 	}
@@ -185,6 +232,14 @@ func (handler *CentralSystemHandler) OnStatusNotification(chargePointId string, 
 	if request.ConnectorId > 0 {
 		connectorInfo := info.getConnector(request.ConnectorId)
 		connectorInfo.Status = request.Status
+		connectorInfo.Info = request.Info
+		if request.Status == "SuspendedEV" && request.Info == "No energy flowing to vehicle" {
+			connectorInfo.DoneCharging = true
+		} else if request.Status == "SuspendedEVSE" {
+			connectorInfo.DoneCharging = false
+		} else if request.Status == "Charging" && request.Info == "Energy flowing to vehicle" {
+			connectorInfo.DoneCharging = false
+		}
 		//if connectorInfo.status == "Charging" {
 		//	time.Sleep(1 * time.Second)
 		// EV is plugged in
@@ -211,7 +266,7 @@ func (handler *CentralSystemHandler) OnStatusNotification(chargePointId string, 
 }
 
 func (handler *CentralSystemHandler) OnStartTransaction(chargePointId string, request *core.StartTransactionRequest) (confirmation *core.StartTransactionConfirmation, err error) {
-	info, ok := handler.chargePoints[chargePointId]
+	info, ok := handler.ChargePoints[chargePointId]
 	if !ok {
 		return nil, fmt.Errorf("unknown charge point %v", chargePointId)
 	}
@@ -224,27 +279,87 @@ func (handler *CentralSystemHandler) OnStartTransaction(chargePointId string, re
 	transaction.ConnectorId = request.ConnectorId
 	transaction.StartMeter = request.MeterStart
 	transaction.StartTime = request.Timestamp
-	transaction.Id = nextTransactionId
-	nextTransactionId += 1
-	connector.CurrentTransaction = transaction.Id
-	info.Transactions[transaction.Id] = transaction
-	//TODO: check billable clients
+	transaction.Id = chargePointId
+	transactionId := handler.NextTransactionID
+	handler.NextTransactionID += 1
+	connector.CurrentTransaction = transactionId
+	handler.Transactions[transactionId] = transaction
+	//Authorization-Check
+	var authorized types.AuthorizationStatus
+	isMac := false
+	idwithoutMac := strings.Replace(request.IdTag, "MAC", "", -1)
+	log.Printf("ID_TAG: " + idwithoutMac)
+	if (string([]rune(request.IdTag)[0]) == "M") && (string([]rune(request.IdTag)[1]) == "A") && (string([]rune(request.IdTag)[2]) == "C") {
+		isMac = true
+	}
+
+	if isMac {
+		_, exists := identity.MACs[idwithoutMac]
+		if exists {
+			if identity.MACs[idwithoutMac].Authorized {
+				authorized = types.AuthorizationStatusAccepted
+				logDefault(chargePointId, request.GetFeatureName()).Infof("mac authorized")
+				go handler.AssignPowerOnAuth(chargePointId)
+			} else {
+				authorized = types.AuthorizationStatusExpired
+				logDefault(chargePointId, request.GetFeatureName()).Infof("mac blocked")
+			}
+		} else {
+			authorized = types.AuthorizationStatusBlocked
+			logDefault(chargePointId, request.GetFeatureName()).Infof("mac not in list")
+		}
+
+	} else {
+		_, exists := identity.Cards[request.IdTag]
+		if exists {
+			if identity.Cards[request.IdTag].Authorized {
+				authorized = types.AuthorizationStatusAccepted
+				logDefault(chargePointId, request.GetFeatureName()).Infof("card authorized")
+				go handler.AssignPowerOnAuth(chargePointId)
+			} else {
+				authorized = types.AuthorizationStatusExpired
+				logDefault(chargePointId, request.GetFeatureName()).Infof("card blocked")
+			}
+		} else {
+			authorized = types.AuthorizationStatusBlocked
+			logDefault(chargePointId, request.GetFeatureName()).Infof("card not in list")
+		}
+
+	}
+
+	//
 	logDefault(chargePointId, request.GetFeatureName()).Infof("started transaction %v for connector %v", transaction.Id, transaction.ConnectorId)
-	return core.NewStartTransactionConfirmation(types.NewIdTagInfo(types.AuthorizationStatusAccepted), transaction.Id), nil
+	return core.NewStartTransactionConfirmation(types.NewIdTagInfo(authorized), transactionId), nil
 }
 
 func (handler *CentralSystemHandler) OnStopTransaction(chargePointId string, request *core.StopTransactionRequest) (confirmation *core.StopTransactionConfirmation, err error) {
-	info, ok := handler.chargePoints[chargePointId]
+	info, ok := handler.ChargePoints[chargePointId]
 	if !ok {
 		return nil, fmt.Errorf("unknown charge point %v", chargePointId)
 	}
-	transaction, ok := info.Transactions[request.TransactionId]
+	transaction, ok := handler.Transactions[request.TransactionId]
 	if ok {
 		connector := info.getConnector(transaction.ConnectorId)
 		connector.CurrentTransaction = -1
 		transaction.EndTime = request.Timestamp
 		transaction.EndMeter = request.MeterStop
-		//TODO: bill charging period to client
+		energyUsed := transaction.EndMeter - transaction.StartMeter
+		//Detect if idtag is mac or card
+		isMac := false
+		idwithoutMac := strings.Replace(request.IdTag, "MAC", "", -1)
+		log.Printf("ID_TAG: " + idwithoutMac)
+		if (string([]rune(request.IdTag)[0]) == "M") && (string([]rune(request.IdTag)[1]) == "A") && (string([]rune(request.IdTag)[2]) == "C") {
+			isMac = true
+		}
+		// isMac is true if it is a mac, idwithoutMac if just some form of id is needed
+		//writing used energy onto id
+		var tagident authIdStruct
+		if isMac { //billing to mac
+			tagident = identity.MACs[idwithoutMac]
+		} else { //billing to normal id-tag
+			tagident = identity.Cards[request.IdTag]
+		}
+		tagident.EnergyCharged += int64(energyUsed)
 	}
 	logDefault(chargePointId, request.GetFeatureName()).Infof("stopped transaction %v - %v", request.TransactionId, request.Reason)
 	for _, mv := range request.TransactionData {
@@ -256,7 +371,7 @@ func (handler *CentralSystemHandler) OnStopTransaction(chargePointId string, req
 // ------------- Firmware management profile callbacks -------------
 
 func (handler *CentralSystemHandler) OnDiagnosticsStatusNotification(chargePointId string, request *firmware.DiagnosticsStatusNotificationRequest) (confirmation *firmware.DiagnosticsStatusNotificationConfirmation, err error) {
-	info, ok := handler.chargePoints[chargePointId]
+	info, ok := handler.ChargePoints[chargePointId]
 	if !ok {
 		return nil, fmt.Errorf("unknown charge point %v", chargePointId)
 	}
@@ -266,7 +381,7 @@ func (handler *CentralSystemHandler) OnDiagnosticsStatusNotification(chargePoint
 }
 
 func (handler *CentralSystemHandler) OnFirmwareStatusNotification(chargePointId string, request *firmware.FirmwareStatusNotificationRequest) (confirmation *firmware.FirmwareStatusNotificationConfirmation, err error) {
-	info, ok := handler.chargePoints[chargePointId]
+	info, ok := handler.ChargePoints[chargePointId]
 	if !ok {
 		return nil, fmt.Errorf("unknown charge point %v", chargePointId)
 	}
@@ -279,43 +394,61 @@ func (handler *CentralSystemHandler) OnFirmwareStatusNotification(chargePointId 
 
 // Utility functions
 
+// GetChargePointList Http-RPC
 func (handler *CentralSystemHandler) GetChargePointList() map[string]*ChargePointState {
-	return handler.chargePoints
+	return handler.ChargePoints
 }
 
 func (handler *CentralSystemHandler) GetSystemState() map[string]interface{} {
 	reply := make(map[string]interface{})
-	reply["chargePoints"] = handler.chargePoints
-	reply["groups"] = handler.groups
+	reply["chargePoints"] = handler.ChargePoints
+	reply["groups"] = handler.Groups
 	reply["identities"] = identity
+	reply["debug"] = handler
 	return reply
 }
 
 func (handler *CentralSystemHandler) SetChargePointRemoteStart(chargePointID string, idtag string) bool {
-	success := true
 	println(chargePointID)
 	callback3 := func(confirmation *core.RemoteStartTransactionConfirmation, err error) {
 		log.Println("Confirmation")
 	}
-	centralSystem.RemoteStartTransaction(chargePointID, callback3, idtag)
-	return success
+	_ = centralSystem.RemoteStartTransaction(chargePointID, callback3, idtag)
+	return true
 }
 
 func (handler *CentralSystemHandler) UnlockPort(chargePointID string, ConnID int) {
-	handler.chargePoints[chargePointID].Connectors[ConnID].UnlockProgress = ""
+	handler.ChargePoints[chargePointID].Connectors[ConnID].UnlockProgress = ""
 	callback4 := func(confirm *core.UnlockConnectorConfirmation, err error) {
-		handler.chargePoints[chargePointID].Connectors[ConnID].UnlockProgress = string(confirm.Status)
+		handler.ChargePoints[chargePointID].Connectors[ConnID].UnlockProgress = string(confirm.Status)
 	}
 	_ = centralSystem.UnlockConnector(chargePointID, callback4, ConnID) //Always 1 one JuiceME Chargers, but we just define one in case Param not given (in server.go)
 	return
 }
+
+func (handler *CentralSystemHandler) OverridePowerTarget(chargePointID string, limit string) bool {
+	success := false
+	success = handler.SetConfig(chargePointID, "DlmOperatorPhase1Limit", limit)
+	if success {
+		success = handler.SetConfig(chargePointID, "DlmOperatorPhase2Limit", limit)
+	}
+	if success {
+		success = handler.SetConfig(chargePointID, "DlmOperatorPhase3Limit", limit)
+	}
+	if !success {
+		log.Println("Error whilst setting current from Override RPC")
+	}
+	return success
+}
+
+//END http-rpc
 
 func logDefault(chargePointId string, feature string) *logrus.Entry {
 	return log.WithFields(logrus.Fields{"client": chargePointId, "message": feature})
 }
 
 func (handler *CentralSystemHandler) chargePointByID(id string) (*ChargePointState, error) {
-	cp, ok := handler.chargePoints[id]
+	cp, ok := handler.ChargePoints[id]
 	if !ok {
 		return nil, fmt.Errorf("unknown charge point: %s", id)
 	}

@@ -19,8 +19,10 @@ const (
 	defaultListenPort        = 8887
 	defaultHeartbeatInterval = 60
 	waitinterval             = 5
-	version                  = "0.1.4"
+	version                  = "0.1.6"
 	authlistfilename         = "ident.json"
+	centralsystemfilename    = "persistence.json"
+	debugvalue               = false
 )
 
 var log *logrus.Logger
@@ -33,9 +35,10 @@ type ident struct {
 }
 
 type authIdStruct struct {
-	TXList        map[string]TransactionInfo `json:"tx_list"`
-	Authorized    bool                       `json:"authorized"`
-	EnergyCharged int64                      `json:"energy_charged"`
+	TXList         map[string]TransactionInfo `json:"tx_list"`
+	Authorized     bool                       `json:"authorized"`
+	EnergyCharged  int64                      `json:"energy_charged"`
+	CurrentSession int64                      `json:"current_session"`
 }
 
 func setupCentralSystem() ocpp16.CentralSystem {
@@ -90,7 +93,7 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 	}
 
 	//set all value 0 for Power
-	cp := handler.chargePoints[chargePointID]
+	cp := handler.ChargePoints[chargePointID]
 	cp.Power.L1 = 0
 	cp.Power.L2 = 0
 	cp.Power.L3 = 0
@@ -137,34 +140,37 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 	}
 	//Start Set to safe Charge Limit, so in case something breaks whilst dlm its doing its stuff we don't trip a breaker, lulz
 	time.Sleep(waitinterval * time.Second)
-	success := handler.SetConfig(chargePointID, "DlmOperatorPhase1Limit", "0")
+	success := handler.SetConfig(chargePointID, "DlmOperatorPhase1Limit", "6")
 	if success {
-		success = handler.SetConfig(chargePointID, "DlmOperatorPhase2Limit", "0")
+		success = handler.SetConfig(chargePointID, "DlmOperatorPhase2Limit", "6")
 	}
 	if success {
-		success = handler.SetConfig(chargePointID, "DlmOperatorPhase3Limit", "0")
+		success = handler.SetConfig(chargePointID, "DlmOperatorPhase3Limit", "6")
 	}
 	if !success {
 		log.Println("Error whilst setting safe current!!!!!!!!!!!!!!!!!!!!!") //maybe something here to stop autorization on that guy until its manually solved
 	}
-	///End Set to safe Charge Limit
+	handler.ChargePointsInitialized[chargePointID] = true
+	///End Set to safe Charge Limit 0
 
 }
 
 // Start function
 func main() {
-	//Persistence of cards/evccid(pefix "MAC")
+	//Persistence of cards/EVCCID(Prefix "MAC")
 	authFile, _ := ioutil.ReadFile(authlistfilename)
 	_ = json.Unmarshal(authFile, &identity)
-	//Vars for remembering what has been initialized
-	groupsInitialized := make(map[string]bool)
-	chargepointInitialized := make(map[string]bool)
+	//persistence for centralSystem
+	handler := &CentralSystemHandler{ChargePoints: map[string]*ChargePointState{}, Groups: map[string]*Group{}, GroupsInitialized: map[string]bool{}, ChargePointsInitialized: map[string]bool{}, debug: debugvalue, Transactions: map[int]*TransactionInfo{}}
+
+	//Leave commented out for now until we have a file
+	centralSystemFile, _ := ioutil.ReadFile(centralsystemfilename)
+	_ = json.Unmarshal(centralSystemFile, &handler)
 	// Load config from const
 	var listenPort = defaultListenPort
 	// Prepare OCPP 1.6 central system
 	centralSystem = setupCentralSystem()
 	// Support callbacks for all OCPP 1.6 profiles
-	handler := &CentralSystemHandler{chargePoints: map[string]*ChargePointState{}, groups: map[string]*Group{}}
 	centralSystem.SetCoreHandler(handler)
 	centralSystem.SetLocalAuthListHandler(handler)
 	centralSystem.SetFirmwareManagementHandler(handler)
@@ -173,27 +179,28 @@ func main() {
 	centralSystem.SetSmartChargingHandler(handler)
 	// Add handlers for dis/connection of charge points
 	centralSystem.SetNewChargePointHandler(func(chargePoint ocpp16.ChargePointConnection) {
-		if !chargepointInitialized[chargePoint.ID()] {
-			handler.chargePoints[chargePoint.ID()] = &ChargePointState{Connectors: map[int]*ConnectorInfo{}, Transactions: map[int]*TransactionInfo{}}
+		if !handler.ChargePointsInitialized[chargePoint.ID()] {
+			handler.ChargePoints[chargePoint.ID()] = &ChargePointState{Connectors: map[int]*ConnectorInfo{}}
 		}
 		log.WithField("client", chargePoint.ID()).Info("new charge point connected")
 		groupdid := string([]rune(chargePoint.ID())[0])
 		log.Println(groupdid)
-		if !groupsInitialized[groupdid] {
-			handler.groups[groupdid] = &Group{Chargers: map[string]string{}, MaxL1: 32, MaxL2: 32, MaxL3: 32}
-			handler.groups[groupdid].Chargers[chargePoint.ID()] = "true"
-			groupsInitialized[groupdid] = true
+		if !handler.GroupsInitialized[groupdid] {
+			handler.Groups[groupdid] = &Group{Chargers: map[string]string{}, MaxL1: 32, MaxL2: 32, MaxL3: 32}
+			handler.Groups[groupdid].Chargers[chargePoint.ID()] = "true"
+			handler.GroupsInitialized[groupdid] = true
 		} else {
-			handler.groups[groupdid].Chargers[chargePoint.ID()] = "true"
+			handler.Groups[groupdid].Chargers[chargePoint.ID()] = "true"
 		}
 		go setupRoutine(chargePoint.ID(), handler)
 	})
+	//DisconnectHandler
 	centralSystem.SetChargePointDisconnectedHandler(func(chargePoint ocpp16.ChargePointConnection) {
 		log.WithField("client", chargePoint.ID()).Info("charge point disconnected")
 		//delete(handler.chargePoints, chargePoint.ID())
-		handler.chargePoints[chargePoint.ID()].Status = core.ChargePointStatusUnavailable
+		handler.ChargePoints[chargePoint.ID()].Status = core.ChargePointStatusUnavailable
 		groupdid := string([]rune(chargePoint.ID())[0])
-		delete(handler.groups[groupdid].Chargers, chargePoint.ID())
+		delete(handler.Groups[groupdid].Chargers, chargePoint.ID())
 	})
 	ocppj.SetLogger(log.WithField("logger", "ocppj"))
 	//ws.Server.Errors()
@@ -207,8 +214,11 @@ func main() {
 	defer func() {
 		fmt.Println("Saving Files to Disk (Persistence)")
 		authlistjson, _ := json.MarshalIndent(identity, "", " ")
-
+		centralSystemjson, _ := json.MarshalIndent(handler, "", " ")
+		log.Println(authlistjson)
+		log.Println(centralSystemjson)
 		_ = ioutil.WriteFile(authlistfilename, authlistjson, 0644)
+		_ = ioutil.WriteFile(centralsystemfilename, centralSystemjson, 0644)
 	}()
 }
 

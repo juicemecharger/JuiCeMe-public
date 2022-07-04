@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -69,7 +71,7 @@ func (handler *CentralSystemHandler) api(w http.ResponseWriter, r *http.Request)
 			idtag = req.Params[1]
 
 		} else {
-			idtag = "noIDSet"
+			idtag = "remoteStartNoIDSet"
 		}
 		reply.Result = "true"
 		handler.SetChargePointRemoteStart(chargePointID, idtag)
@@ -83,13 +85,13 @@ func (handler *CentralSystemHandler) api(w http.ResponseWriter, r *http.Request)
 		} else {
 			connectorID = 1
 		}
-		handler.chargePoints[req.Params[0]].Connectors[connectorID].UnlockProgress = ""
+		handler.ChargePoints[req.Params[0]].Connectors[connectorID].UnlockProgress = ""
 		go handler.UnlockPort(req.Params[0], connectorID)
 		for timeout < 10 {
 			timeout++
 			time.Sleep(5 * time.Millisecond)
-			if handler.chargePoints[req.Params[0]].Connectors[connectorID].UnlockProgress != "" {
-				confirmation = handler.chargePoints[req.Params[0]].Connectors[connectorID].UnlockProgress
+			if handler.ChargePoints[req.Params[0]].Connectors[connectorID].UnlockProgress != "" {
+				confirmation = handler.ChargePoints[req.Params[0]].Connectors[connectorID].UnlockProgress
 				break
 			}
 			time.Sleep(500 * time.Millisecond)
@@ -99,6 +101,25 @@ func (handler *CentralSystemHandler) api(w http.ResponseWriter, r *http.Request)
 		} else {
 			reply.Result = "ERROR"
 		}
+	case "overridePowerTarget":
+		var chargePointID string
+		var powerLimit string
+		if len(req.Params) == 2 {
+			chargePointID = req.Params[0]
+			powerLimit = req.Params[1]
+			result := handler.OverridePowerTarget(chargePointID, powerLimit)
+			reply.Result = result
+		} else {
+			reply.Result = "Need exactly 2 params of type string"
+		}
+	case "savePersistence":
+		fmt.Println("Saving Files to Disk (Persistence)")
+		authlistjson, _ := json.MarshalIndent(identity, "", " ")
+		centralSystemjson, _ := json.MarshalIndent(handler, "", " ")
+		log.Println(string(authlistjson))
+		log.Println(string(centralSystemjson))
+		_ = ioutil.WriteFile(authlistfilename, authlistjson, 0644)
+		_ = ioutil.WriteFile(centralsystemfilename, centralSystemjson, 0644)
 	default:
 		reply.Result = "unknownMethod"
 	}
