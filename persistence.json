@@ -2,103 +2,85 @@
  "charge_points": {
   "2ladeplatz5": {
    "status": "Available",
+   "dlm_group": "2",
    "connectors": {
     "1": {
-     "status": "Charging",
-     "info": "Energy is flowing to vehicle",
+     "status": "SuspendedEV",
+     "info": "Status Update -Type2-",
      "unlock_progress": "",
-     "current_transaction": 3,
+     "current_transaction": 5,
      "done_charging": false
     }
    },
    "currents": {
-    "l1": 6,
-    "l2": 6,
-    "l3": 6
-   },
-   "current_assigned": {
     "l1": 0,
     "l2": 0,
     "l3": 0
+   },
+   "current_assigned": {
+    "l1": 9,
+    "l2": 9,
+    "l3": 9
+   },
+   "current_targeted": {
+    "l1": 9,
+    "l2": 9,
+    "l3": 9
    },
    "current_offered": 6,
-   "power": {
-    "l1": 1414,
-    "l2": 1418,
-    "l3": 1391,
-    "total": 4223
-   },
-   "energy_meter_current": 25300,
-   "error_code": "NoError"
-  },
-  "2ladeplatz6": {
-   "status": "Available",
-   "connectors": {
-    "1": {
-     "status": "Charging",
-     "info": "No energy flowing to vehicle",
-     "unlock_progress": "",
-     "current_transaction": 2,
-     "done_charging": false
-    }
-   },
-   "currents": {
-    "l1": 0,
-    "l2": 0,
-    "l3": 0
-   },
-   "current_assigned": {
-    "l1": 0,
-    "l2": 0,
-    "l3": 0
-   },
-   "current_offered": 0,
    "power": {
     "l1": 0,
     "l2": 0,
     "l3": 0,
     "total": 0
    },
-   "energy_meter_current": 17800,
+   "energy_meter_current": 31700,
    "error_code": "NoError"
   },
-  "2ladeplatz7": {
-   "status": "Unavailable",
+  "2ladeplatz6": {
+   "status": "Available",
+   "dlm_group": "2",
    "connectors": {
     "1": {
-     "status": "Charging",
-     "info": "Status Update -Type2-",
+     "status": "SuspendedEV",
+     "info": "No energy flowing to vehicle",
      "unlock_progress": "",
-     "current_transaction": 0,
-     "done_charging": false
+     "current_transaction": 4,
+     "done_charging": true
     }
    },
    "currents": {
-    "l1": 6,
-    "l2": 0,
-    "l3": 0
-   },
-   "current_assigned": {
     "l1": 0,
     "l2": 0,
     "l3": 0
    },
+   "current_assigned": {
+    "l1": 8,
+    "l2": 8,
+    "l3": 8
+   },
+   "current_targeted": {
+    "l1": 8,
+    "l2": 8,
+    "l3": 8
+   },
    "current_offered": 6,
    "power": {
-    "l1": 1343,
+    "l1": 0,
     "l2": 0,
     "l3": 0,
-    "total": 1343
+    "total": 0
    },
-   "energy_meter_current": 8800,
+   "energy_meter_current": 21900,
    "error_code": "NoError"
   },
-  "2ladeplatz8": {
+  "2ladeplatz7": {
    "status": "Available",
+   "dlm_group": "2",
    "connectors": {
     "1": {
      "status": "Available",
-     "info": "No energy flowing to vehicle",
+     "info": "Status Update",
      "unlock_progress": "",
      "current_transaction": -1,
      "done_charging": false
@@ -110,6 +92,48 @@
     "l3": 0
    },
    "current_assigned": {
+    "l1": 16,
+    "l2": 16,
+    "l3": 16
+   },
+   "current_targeted": {
+    "l1": 16,
+    "l2": 16,
+    "l3": 16
+   },
+   "current_offered": 16,
+   "power": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0,
+    "total": 0
+   },
+   "energy_meter_current": 12100,
+   "error_code": "NoError"
+  },
+  "2ladeplatz8": {
+   "status": "Available",
+   "dlm_group": "2",
+   "connectors": {
+    "1": {
+     "status": "Available",
+     "info": "Status Update",
+     "unlock_progress": "",
+     "current_transaction": -1,
+     "done_charging": false
+    }
+   },
+   "currents": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_assigned": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_targeted": {
     "l1": 0,
     "l2": 0,
     "l3": 0
@@ -130,6 +154,7 @@
    "chargers": {
     "2ladeplatz5": "true",
     "2ladeplatz6": "true",
+    "2ladeplatz7": "true",
     "2ladeplatz8": "true"
    },
    "max_l1": 32,
@@ -153,6 +178,61 @@
   "2ladeplatz7": true,
   "2ladeplatz8": true
  },
- "transactions": {},
- "next_transaction_id": 1000000
+ "transactions": {
+  "0": {
+   "id": 0,
+   "start_time": "2022-07-04T14:29:02Z",
+   "end_time": "2022-07-04T14:40:43Z",
+   "start_meter": 31700,
+   "end_meter": 31700,
+   "connector_id": 1,
+   "id_tag": "MAC001823375907"
+  },
+  "1": {
+   "id": 1,
+   "start_time": "2022-07-04T14:40:01Z",
+   "end_time": "2022-07-04T14:41:47Z",
+   "start_meter": 21800,
+   "end_meter": 21900,
+   "connector_id": 1,
+   "id_tag": "MACDC442718546C"
+  },
+  "2": {
+   "id": 2,
+   "start_time": "2022-07-04T14:41:07Z",
+   "end_time": "2022-07-04T14:41:25Z",
+   "start_meter": 31700,
+   "end_meter": 31700,
+   "connector_id": 1,
+   "id_tag": "MAC001823375907"
+  },
+  "3": {
+   "id": 3,
+   "start_time": "2022-07-04T14:42:26Z",
+   "end_time": "2022-07-04T14:42:45Z",
+   "start_meter": 31700,
+   "end_meter": 31700,
+   "connector_id": 1,
+   "id_tag": "MACDC442718546C"
+  },
+  "4": {
+   "id": 4,
+   "start_time": "2022-07-04T14:42:58Z",
+   "end_time": null,
+   "start_meter": 21900,
+   "end_meter": 0,
+   "connector_id": 1,
+   "id_tag": "MACDC442718546C"
+  },
+  "5": {
+   "id": 5,
+   "start_time": "2022-07-04T14:43:11Z",
+   "end_time": null,
+   "start_meter": 31700,
+   "end_meter": 0,
+   "connector_id": 1,
+   "id_tag": "MAC001823375907"
+  }
+ },
+ "next_transaction_id": 6
 }

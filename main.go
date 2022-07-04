@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 	"time"
 
 	ocpp16 "github.com/lorenzodonini/ocpp-go/ocpp1.6"
@@ -140,18 +141,43 @@ func setupRoutine(chargePointID string, handler *CentralSystemHandler) {
 	}
 	//Start Set to safe Charge Limit, so in case something breaks whilst dlm its doing its stuff we don't trip a breaker, lulz
 	time.Sleep(waitinterval * time.Second)
-	success := handler.SetConfig(chargePointID, "DlmOperatorPhase1Limit", "6")
-	if success {
-		success = handler.SetConfig(chargePointID, "DlmOperatorPhase2Limit", "6")
+	if !handler.ChargePointsInitialized[chargePointID] {
+		success := handler.SetConfig(chargePointID, "DlmOperatorPhase1Limit", "8")
+		if success {
+			success = handler.SetConfig(chargePointID, "DlmOperatorPhase2Limit", "8")
+		}
+		if success {
+			success = handler.SetConfig(chargePointID, "DlmOperatorPhase3Limit", "8")
+		}
+		if !success {
+			log.Println("Error whilst setting safe current!!!!!!!!!!!!!!!!!!!!!") //maybe something here to stop autorization on that guy until its manually solved
+		}
+		handler.ChargePointsInitialized[chargePointID] = true
+	} else if handler.ChargePoints[chargePointID].CurrentAssigned.L1 != 0 && handler.ChargePoints[chargePointID].CurrentAssigned.L2 != 0 && handler.ChargePoints[chargePointID].CurrentAssigned.L3 != 0 {
+		success := handler.SetConfig(chargePointID, "DlmOperatorPhase1Limit", strconv.Itoa(handler.ChargePoints[chargePointID].CurrentAssigned.L1))
+		if success {
+			success = handler.SetConfig(chargePointID, "DlmOperatorPhase2Limit", strconv.Itoa(handler.ChargePoints[chargePointID].CurrentAssigned.L2))
+		}
+		if success {
+			success = handler.SetConfig(chargePointID, "DlmOperatorPhase3Limit", strconv.Itoa(handler.ChargePoints[chargePointID].CurrentAssigned.L3))
+		}
+		if !success {
+			log.Println("Error whilst setting safe current!!!!!!!!!!!!!!!!!!!!!") //maybe something here to stop autorization on that guy until its manually solved
+		}
+	} else {
+		success := handler.SetConfig(chargePointID, "DlmOperatorPhase1Limit", "8")
+		if success {
+			success = handler.SetConfig(chargePointID, "DlmOperatorPhase2Limit", "8")
+		}
+		if success {
+			success = handler.SetConfig(chargePointID, "DlmOperatorPhase3Limit", "8")
+		}
+		if !success {
+			log.Println("Error whilst setting safe current!!!!!!!!!!!!!!!!!!!!!") //maybe something here to stop autorization on that guy until its manually solved
+		}
 	}
-	if success {
-		success = handler.SetConfig(chargePointID, "DlmOperatorPhase3Limit", "6")
-	}
-	if !success {
-		log.Println("Error whilst setting safe current!!!!!!!!!!!!!!!!!!!!!") //maybe something here to stop autorization on that guy until its manually solved
-	}
-	handler.ChargePointsInitialized[chargePointID] = true
-	///End Set to safe Charge Limit 0
+
+	///End Set to safe Charge Limit
 
 }
 
@@ -192,6 +218,7 @@ func main() {
 		} else {
 			handler.Groups[groupdid].Chargers[chargePoint.ID()] = "true"
 		}
+		handler.ChargePoints[chargePoint.ID()].DLMGroup = groupdid
 		go setupRoutine(chargePoint.ID(), handler)
 	})
 	//DisconnectHandler

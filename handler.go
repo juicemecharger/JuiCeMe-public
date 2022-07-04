@@ -27,7 +27,7 @@ type Group struct {
 
 // TransactionInfo contains info about a transaction
 type TransactionInfo struct {
-	Id          string          `json:"id"`
+	Id          int             `json:"id"`
 	StartTime   *types.DateTime `json:"start_time"`
 	EndTime     *types.DateTime `json:"end_time"`
 	StartMeter  int             `json:"start_meter"`
@@ -76,9 +76,11 @@ type ChargePointState struct {
 	Status             core.ChargePointStatus `json:"status"`
 	diagnosticsStatus  firmware.DiagnosticsStatus
 	firmwareStatus     firmware.FirmwareStatus
+	DLMGroup           string                 `json:"dlm_group"`
 	Connectors         map[int]*ConnectorInfo `json:"connectors"`
 	Currents           PortCurrents           `json:"currents"`
 	CurrentAssigned    PortCurrents           `json:"current_assigned"`
+	CurrentTargeted    PortCurrents           `json:"current_targeted"`
 	CurrentOffered     int                    `json:"current_offered"`
 	Power              PortPower              `json:"power"`
 	EnergyMeterCurrent int64                  `json:"energy_meter_current"`
@@ -237,25 +239,9 @@ func (handler *CentralSystemHandler) OnStatusNotification(chargePointId string, 
 			connectorInfo.DoneCharging = true
 		} else if request.Status == "SuspendedEVSE" {
 			connectorInfo.DoneCharging = false
-		} else if request.Status == "Charging" && request.Info == "Energy flowing to vehicle" {
+		} else if request.Status == "Charging" && request.Info == "Energy is flowing to vehicle" {
 			connectorInfo.DoneCharging = false
 		}
-		//if connectorInfo.status == "Charging" {
-		//	time.Sleep(1 * time.Second)
-		// EV is plugged in
-		//modclient, err = modbus.NewClient(&modbus.ClientConfiguration{
-		//	URL:     "tcp://" + info.ipadress + ":502",
-		//	Timeout: 1 * time.Second,
-		//})
-		//Modbus Request EVCC_ID
-		//Test- EVCCID
-
-		//ENDE TEST
-
-		//} else if connectorInfo.status == "Available" {
-		//	//No EV is plugged in
-		//	connectorInfo.evccid = "None"
-		//}
 		logDefault(chargePointId, request.GetFeatureName()).Infof("connector %v updated status to %v", request.ConnectorId, request.Status)
 		log.Println(request.Info)
 	} else {
@@ -279,13 +265,11 @@ func (handler *CentralSystemHandler) OnStartTransaction(chargePointId string, re
 	transaction.ConnectorId = request.ConnectorId
 	transaction.StartMeter = request.MeterStart
 	transaction.StartTime = request.Timestamp
-	transaction.Id = chargePointId
-	transactionId := handler.NextTransactionID
+	transaction.Id = handler.NextTransactionID
 	handler.NextTransactionID += 1
-	connector.CurrentTransaction = transactionId
-	handler.Transactions[transactionId] = transaction
+	connector.CurrentTransaction = transaction.Id
+	handler.Transactions[transaction.Id] = transaction
 	//Authorization-Check
-	var authorized types.AuthorizationStatus
 	isMac := false
 	idwithoutMac := strings.Replace(request.IdTag, "MAC", "", -1)
 	log.Printf("ID_TAG: " + idwithoutMac)
@@ -296,16 +280,9 @@ func (handler *CentralSystemHandler) OnStartTransaction(chargePointId string, re
 	if isMac {
 		_, exists := identity.MACs[idwithoutMac]
 		if exists {
-			if identity.MACs[idwithoutMac].Authorized {
-				authorized = types.AuthorizationStatusAccepted
-				logDefault(chargePointId, request.GetFeatureName()).Infof("mac authorized")
-				go handler.AssignPowerOnAuth(chargePointId)
-			} else {
-				authorized = types.AuthorizationStatusExpired
-				logDefault(chargePointId, request.GetFeatureName()).Infof("mac blocked")
-			}
+			logDefault(chargePointId, request.GetFeatureName()).Infof("transaction mac authorized")
+			go handler.AssignPowerOnAuth(chargePointId)
 		} else {
-			authorized = types.AuthorizationStatusBlocked
 			logDefault(chargePointId, request.GetFeatureName()).Infof("mac not in list")
 		}
 
@@ -313,15 +290,10 @@ func (handler *CentralSystemHandler) OnStartTransaction(chargePointId string, re
 		_, exists := identity.Cards[request.IdTag]
 		if exists {
 			if identity.Cards[request.IdTag].Authorized {
-				authorized = types.AuthorizationStatusAccepted
-				logDefault(chargePointId, request.GetFeatureName()).Infof("card authorized")
+				logDefault(chargePointId, request.GetFeatureName()).Infof("transaction card authorized")
 				go handler.AssignPowerOnAuth(chargePointId)
-			} else {
-				authorized = types.AuthorizationStatusExpired
-				logDefault(chargePointId, request.GetFeatureName()).Infof("card blocked")
 			}
 		} else {
-			authorized = types.AuthorizationStatusBlocked
 			logDefault(chargePointId, request.GetFeatureName()).Infof("card not in list")
 		}
 
@@ -329,7 +301,7 @@ func (handler *CentralSystemHandler) OnStartTransaction(chargePointId string, re
 
 	//
 	logDefault(chargePointId, request.GetFeatureName()).Infof("started transaction %v for connector %v", transaction.Id, transaction.ConnectorId)
-	return core.NewStartTransactionConfirmation(types.NewIdTagInfo(authorized), transactionId), nil
+	return core.NewStartTransactionConfirmation(types.NewIdTagInfo(types.AuthorizationStatusAccepted), transaction.Id), nil
 }
 
 func (handler *CentralSystemHandler) OnStopTransaction(chargePointId string, request *core.StopTransactionRequest) (confirmation *core.StopTransactionConfirmation, err error) {
@@ -417,6 +389,17 @@ func (handler *CentralSystemHandler) SetChargePointRemoteStart(chargePointID str
 	return true
 }
 
+func (handler *CentralSystemHandler) SetChargePointRemoteStop(chargePointID string) bool {
+	println(chargePointID)
+	callback3 := func(confirmation *core.RemoteStopTransactionConfirmation, err error) {
+		log.Println("Confirmation")
+	}
+	txid := handler.ChargePoints[chargePointID].Connectors[1].CurrentTransaction
+	println(txid)
+	_ = centralSystem.RemoteStopTransaction(chargePointID, callback3, txid)
+	return true
+}
+
 func (handler *CentralSystemHandler) UnlockPort(chargePointID string, ConnID int) {
 	handler.ChargePoints[chargePointID].Connectors[ConnID].UnlockProgress = ""
 	callback4 := func(confirm *core.UnlockConnectorConfirmation, err error) {
@@ -427,18 +410,20 @@ func (handler *CentralSystemHandler) UnlockPort(chargePointID string, ConnID int
 }
 
 func (handler *CentralSystemHandler) OverridePowerTarget(chargePointID string, limit string) bool {
-	success := false
-	success = handler.SetConfig(chargePointID, "DlmOperatorPhase1Limit", limit)
-	if success {
-		success = handler.SetConfig(chargePointID, "DlmOperatorPhase2Limit", limit)
+	_, exists := handler.ChargePoints[chargePointID]
+	var err error
+	if exists {
+		handler.ChargePoints[chargePointID].CurrentTargeted.L1, err = strconv.Atoi(limit)
+		handler.ChargePoints[chargePointID].CurrentTargeted.L2, err = strconv.Atoi(limit)
+		handler.ChargePoints[chargePointID].CurrentTargeted.L3, err = strconv.Atoi(limit)
+		if err == nil {
+			return true
+		} else {
+			return false
+		}
+	} else {
+		return false
 	}
-	if success {
-		success = handler.SetConfig(chargePointID, "DlmOperatorPhase3Limit", limit)
-	}
-	if !success {
-		log.Println("Error whilst setting current from Override RPC")
-	}
-	return success
 }
 
 //END http-rpc

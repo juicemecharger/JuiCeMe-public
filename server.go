@@ -75,6 +75,15 @@ func (handler *CentralSystemHandler) api(w http.ResponseWriter, r *http.Request)
 		}
 		reply.Result = "true"
 		handler.SetChargePointRemoteStart(chargePointID, idtag)
+	case "remoteStopTransaction":
+		if len(req.Params) == 1 {
+			chargePointID := req.Params[0]
+			reply.Result = "true"
+			handler.SetChargePointRemoteStop(chargePointID)
+		} else {
+			reply.Result = "Need exactly 1 argument"
+		}
+
 	case "unlockConnector":
 		var connectorID int
 		confirmation := "false"
