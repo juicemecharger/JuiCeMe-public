@@ -121,6 +121,7 @@ func (handler *CentralSystemHandler) api(w http.ResponseWriter, r *http.Request)
 		} else {
 			reply.Result = "Need exactly 2 params of type string"
 		}
+	//more or less a debug method
 	case "savePersistence":
 		fmt.Println("Saving Files to Disk (Persistence)")
 		authlistjson, _ := json.MarshalIndent(identity, "", " ")

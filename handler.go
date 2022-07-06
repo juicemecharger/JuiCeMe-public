@@ -15,14 +15,21 @@ import (
 )
 
 type Group struct {
-	Chargers    map[string]string `json:"chargers"`
-	MaxL1       int               `json:"max_l1"`
-	MaxL2       int               `json:"max_l2"`
-	MaxL3       int               `json:"max_l3"`
-	CurrentL1   int               `json:"current_l1"`
-	CurrentL2   int               `json:"current_l2"`
-	CurrentL3   int               `json:"current_l3"`
-	Initialized bool              `json:"initialized"`
+	Chargers               map[string]string `json:"chargers"`
+	DLMActionPending       bool              `json:"dlm_action_pending"`
+	DLMLockedOut           bool              `json:"dlm_locked_out"` //Require manual unlocking in case of unexpected state
+	MaxL1                  int               `json:"max_l1"`
+	MaxL2                  int               `json:"max_l2"`
+	MaxL3                  int               `json:"max_l3"`
+	CurrentL1              int               `json:"current_l1"`
+	CurrentL2              int               `json:"current_l2"`
+	CurrentL3              int               `json:"current_l3"`
+	AssignedL1             int               `json:"assigned_l1"`
+	AssignedL2             int               `json:"assigned_l2"`
+	AssignedL3             int               `json:"assigned_l3"`
+	Offered3Phase          int               `json:"offered_3phase"`
+	Initialized            bool              `json:"initialized"`
+	AvarageAssignedCurrent int               `json:"avarage_assigned_current"`
 }
 
 // TransactionInfo contains info about a transaction
@@ -47,6 +54,7 @@ type ConnectorInfo struct {
 	UnlockProgress     string                 `json:"unlock_progress"`
 	CurrentTransaction int                    `json:"current_transaction"`
 	DoneCharging       bool                   `json:"done_charging"`
+	OnlyStandby        bool                   `json:"only_standby"`
 }
 
 type PortCurrents struct {
@@ -73,19 +81,25 @@ func (ci *ConnectorInfo) hasTransactionInProgress() bool {
 
 // ChargePointState contains all relevant state data for a connected charge point, simplified only working with single-connector chargepoints
 type ChargePointState struct {
-	Status             core.ChargePointStatus `json:"status"`
-	diagnosticsStatus  firmware.DiagnosticsStatus
-	firmwareStatus     firmware.FirmwareStatus
-	DLMGroup           string                 `json:"dlm_group"`
-	Connectors         map[int]*ConnectorInfo `json:"connectors"`
-	Currents           PortCurrents           `json:"currents"`
-	CurrentAssigned    PortCurrents           `json:"current_assigned"`
-	CurrentTargeted    PortCurrents           `json:"current_targeted"`
-	CurrentOffered     int                    `json:"current_offered"`
-	Power              PortPower              `json:"power"`
-	EnergyMeterCurrent int64                  `json:"energy_meter_current"`
-	lastTimeStamp      *types.DateTime
-	ErrorCode          core.ChargePointErrorCode `json:"error_code"`
+	OfflineForDLMCycles         int                    `json:"offline_for_dlm_cycles"`
+	ReducedPowerOfferring       bool                   `json:"reduced_power_offerring"`
+	MaxingPowerForDLMCycles     int                    `json:"maxing_power_for_dlm_cycles"`
+	NotUsingMaxForDLMCycles     int                    `json:"not_using_max_for_dlm_cycles"`
+	UsingLessThan6AForDLMCycles int                    `json:"using_less_than_6a_for_dlm_cycles"`
+	Rotation                    string                 `json:"rotation"`
+	Status                      core.ChargePointStatus `json:"status"`
+	diagnosticsStatus           firmware.DiagnosticsStatus
+	firmwareStatus              firmware.FirmwareStatus
+	DLMGroup                    string                 `json:"dlm_group"`
+	Connectors                  map[int]*ConnectorInfo `json:"connectors"`
+	Currents                    PortCurrents           `json:"currents"`
+	CurrentAssigned             PortCurrents           `json:"current_assigned"`
+	CurrentTargeted             PortCurrents           `json:"current_targeted"`
+	CurrentOffered              int                    `json:"current_offered"`
+	Power                       PortPower              `json:"power"`
+	EnergyMeterCurrent          int64                  `json:"energy_meter_current"`
+	lastTimeStamp               *types.DateTime
+	ErrorCode                   core.ChargePointErrorCode `json:"error_code"`
 }
 
 func (cps *ChargePointState) getConnector(id int) *ConnectorInfo {
@@ -129,7 +143,6 @@ func (handler *CentralSystemHandler) OnAuthorize(chargePointId string, request *
 			if identity.MACs[idwithoutMac].Authorized {
 				authorized = types.AuthorizationStatusAccepted
 				logDefault(chargePointId, request.GetFeatureName()).Infof("mac authorized")
-				go handler.AssignPowerOnAuth(chargePointId)
 			} else {
 				authorized = types.AuthorizationStatusExpired
 				logDefault(chargePointId, request.GetFeatureName()).Infof("mac blocked")
@@ -145,7 +158,6 @@ func (handler *CentralSystemHandler) OnAuthorize(chargePointId string, request *
 			if identity.Cards[request.IdTag].Authorized {
 				authorized = types.AuthorizationStatusAccepted
 				logDefault(chargePointId, request.GetFeatureName()).Infof("card authorized")
-				go handler.AssignPowerOnAuth(chargePointId)
 			} else {
 				authorized = types.AuthorizationStatusExpired
 				logDefault(chargePointId, request.GetFeatureName()).Infof("card blocked")
@@ -156,7 +168,7 @@ func (handler *CentralSystemHandler) OnAuthorize(chargePointId string, request *
 		}
 
 	}
-
+	go handler.ResetDLM(chargePointId)
 	return core.NewAuthorizationConfirmation(types.NewIdTagInfo(authorized)), nil
 }
 
@@ -171,14 +183,20 @@ func (handler *CentralSystemHandler) OnDataTransfer(chargePointId string, reques
 }
 
 func (handler *CentralSystemHandler) OnHeartbeat(chargePointId string, request *core.HeartbeatRequest) (confirmation *core.HeartbeatConfirmation, err error) {
-	logDefault(chargePointId, request.GetFeatureName()).Infof("heartbeat handled")
+	if debugHearthBeat {
+		logDefault(chargePointId, request.GetFeatureName()).Infof("heartbeat handled")
+	}
 	return core.NewHeartbeatConfirmation(types.NewDateTime(time.Now())), nil
 }
 
 func (handler *CentralSystemHandler) OnMeterValues(chargePointId string, request *core.MeterValuesRequest) (confirmation *core.MeterValuesConfirmation, err error) {
-	logDefault(chargePointId, request.GetFeatureName()).Infof("received meter values for connector %v. Meter values:\n", request.ConnectorId)
+	if handler.debug {
+		logDefault(chargePointId, request.GetFeatureName()).Infof("received meter values for connector %v. Meter values:\n", request.ConnectorId)
+	}
 	for _, mv := range request.MeterValue { //expect that only one meterValue per request is sent
-		logDefault(chargePointId, request.GetFeatureName()).Printf("%v", mv)
+		if handler.debug {
+			logDefault(chargePointId, request.GetFeatureName()).Printf("%v", mv)
+		}
 		for _, sv := range mv.SampledValue {
 			if handler.debug {
 				log.Println("---------------------------")
@@ -237,6 +255,8 @@ func (handler *CentralSystemHandler) OnStatusNotification(chargePointId string, 
 		connectorInfo.Info = request.Info
 		if request.Status == "SuspendedEV" && request.Info == "No energy flowing to vehicle" {
 			connectorInfo.DoneCharging = true
+			connectorInfo.OnlyStandby = true
+
 		} else if request.Status == "SuspendedEVSE" {
 			connectorInfo.DoneCharging = false
 		} else if request.Status == "Charging" && request.Info == "Energy is flowing to vehicle" {
@@ -281,7 +301,6 @@ func (handler *CentralSystemHandler) OnStartTransaction(chargePointId string, re
 		_, exists := identity.MACs[idwithoutMac]
 		if exists {
 			logDefault(chargePointId, request.GetFeatureName()).Infof("transaction mac authorized")
-			go handler.AssignPowerOnAuth(chargePointId)
 		} else {
 			logDefault(chargePointId, request.GetFeatureName()).Infof("mac not in list")
 		}
@@ -291,7 +310,6 @@ func (handler *CentralSystemHandler) OnStartTransaction(chargePointId string, re
 		if exists {
 			if identity.Cards[request.IdTag].Authorized {
 				logDefault(chargePointId, request.GetFeatureName()).Infof("transaction card authorized")
-				go handler.AssignPowerOnAuth(chargePointId)
 			}
 		} else {
 			logDefault(chargePointId, request.GetFeatureName()).Infof("card not in list")
@@ -301,6 +319,8 @@ func (handler *CentralSystemHandler) OnStartTransaction(chargePointId string, re
 
 	//
 	logDefault(chargePointId, request.GetFeatureName()).Infof("started transaction %v for connector %v", transaction.Id, transaction.ConnectorId)
+	handler.ChargePoints[chargePointId].Connectors[1].OnlyStandby = true
+	handler.ChargePoints[chargePointId].Connectors[1].DoneCharging = false
 	return core.NewStartTransactionConfirmation(types.NewIdTagInfo(types.AuthorizationStatusAccepted), transaction.Id), nil
 }
 
@@ -337,6 +357,8 @@ func (handler *CentralSystemHandler) OnStopTransaction(chargePointId string, req
 	for _, mv := range request.TransactionData {
 		logDefault(chargePointId, request.GetFeatureName()).Printf("%v", mv)
 	}
+	handler.ChargePoints[chargePointId].Connectors[1].OnlyStandby = false
+	handler.ChargePoints[chargePointId].Connectors[1].DoneCharging = true
 	return core.NewStopTransactionConfirmation(), nil
 }
 
@@ -417,6 +439,8 @@ func (handler *CentralSystemHandler) OverridePowerTarget(chargePointID string, l
 		handler.ChargePoints[chargePointID].CurrentTargeted.L2, err = strconv.Atoi(limit)
 		handler.ChargePoints[chargePointID].CurrentTargeted.L3, err = strconv.Atoi(limit)
 		if err == nil {
+			groupid := handler.ChargePoints[chargePointID].DLMGroup
+			handler.Groups[groupid].DLMActionPending = true
 			return true
 		} else {
 			return false

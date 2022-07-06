@@ -1,89 +1,64 @@
 {
  "charge_points": {
-  "2ladeplatz5": {
-   "status": "Available",
-   "dlm_group": "2",
+  "1ladeplatz04": {
+   "offline_for_dlm_cycles": 74230,
+   "reduced_power_offerring": false,
+   "maxing_power_for_dlm_cycles": 0,
+   "not_using_max_for_dlm_cycles": 0,
+   "using_less_than_6a_for_dlm_cycles": 0,
+   "status": "Unavailable",
+   "dlm_group": "1",
    "connectors": {
     "1": {
-     "status": "SuspendedEV",
-     "info": "Status Update -Type2-",
-     "unlock_progress": "",
-     "current_transaction": 5,
-     "done_charging": false
-    }
-   },
-   "currents": {
-    "l1": 0,
-    "l2": 0,
-    "l3": 0
-   },
-   "current_assigned": {
-    "l1": 9,
-    "l2": 9,
-    "l3": 9
-   },
-   "current_targeted": {
-    "l1": 9,
-    "l2": 9,
-    "l3": 9
-   },
-   "current_offered": 6,
-   "power": {
-    "l1": 0,
-    "l2": 0,
-    "l3": 0,
-    "total": 0
-   },
-   "energy_meter_current": 31700,
-   "error_code": "NoError"
-  },
-  "2ladeplatz6": {
-   "status": "Available",
-   "dlm_group": "2",
-   "connectors": {
-    "1": {
-     "status": "SuspendedEV",
-     "info": "No energy flowing to vehicle",
-     "unlock_progress": "",
-     "current_transaction": 4,
-     "done_charging": true
-    }
-   },
-   "currents": {
-    "l1": 0,
-    "l2": 0,
-    "l3": 0
-   },
-   "current_assigned": {
-    "l1": 8,
-    "l2": 8,
-    "l3": 8
-   },
-   "current_targeted": {
-    "l1": 8,
-    "l2": 8,
-    "l3": 8
-   },
-   "current_offered": 6,
-   "power": {
-    "l1": 0,
-    "l2": 0,
-    "l3": 0,
-    "total": 0
-   },
-   "energy_meter_current": 21900,
-   "error_code": "NoError"
-  },
-  "2ladeplatz7": {
-   "status": "Available",
-   "dlm_group": "2",
-   "connectors": {
-    "1": {
-     "status": "Available",
+     "status": "Unavailable",
      "info": "Status Update",
      "unlock_progress": "",
      "current_transaction": -1,
-     "done_charging": false
+     "done_charging": false,
+     "only_standby": false
+    }
+   },
+   "currents": {
+    "l1": 15,
+    "l2": 15,
+    "l3": 15
+   },
+   "current_assigned": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_targeted": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_offered": 15,
+   "power": {
+    "l1": 3410,
+    "l2": 3499,
+    "l3": 3504,
+    "total": 10414
+   },
+   "energy_meter_current": 130000,
+   "error_code": "NoError"
+  },
+  "1ladeplatz05": {
+   "offline_for_dlm_cycles": 14460,
+   "reduced_power_offerring": false,
+   "maxing_power_for_dlm_cycles": 0,
+   "not_using_max_for_dlm_cycles": 0,
+   "using_less_than_6a_for_dlm_cycles": 0,
+   "status": "Unavailable",
+   "dlm_group": "1",
+   "connectors": {
+    "1": {
+     "status": "Unavailable",
+     "info": "Status Update",
+     "unlock_progress": "",
+     "current_transaction": -1,
+     "done_charging": true,
+     "only_standby": false
     }
    },
    "currents": {
@@ -92,35 +67,41 @@
     "l3": 0
    },
    "current_assigned": {
-    "l1": 16,
-    "l2": 16,
-    "l3": 16
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
    },
    "current_targeted": {
-    "l1": 16,
-    "l2": 16,
-    "l3": 16
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
    },
-   "current_offered": 16,
+   "current_offered": 0,
    "power": {
     "l1": 0,
     "l2": 0,
     "l3": 0,
     "total": 0
    },
-   "energy_meter_current": 12100,
+   "energy_meter_current": 10700,
    "error_code": "NoError"
   },
-  "2ladeplatz8": {
-   "status": "Available",
-   "dlm_group": "2",
+  "1ladeplatz06": {
+   "offline_for_dlm_cycles": 14889,
+   "reduced_power_offerring": false,
+   "maxing_power_for_dlm_cycles": 0,
+   "not_using_max_for_dlm_cycles": 0,
+   "using_less_than_6a_for_dlm_cycles": 0,
+   "status": "Unavailable",
+   "dlm_group": "1",
    "connectors": {
     "1": {
-     "status": "Available",
+     "status": "Unavailable",
      "info": "Status Update",
      "unlock_progress": "",
      "current_transaction": -1,
-     "done_charging": false
+     "done_charging": true,
+     "only_standby": false
     }
    },
    "currents": {
@@ -147,9 +128,415 @@
    },
    "energy_meter_current": 100,
    "error_code": "NoError"
+  },
+  "1ladeplatz123": {
+   "offline_for_dlm_cycles": 0,
+   "reduced_power_offerring": false,
+   "maxing_power_for_dlm_cycles": 0,
+   "not_using_max_for_dlm_cycles": 0,
+   "using_less_than_6a_for_dlm_cycles": 0,
+   "status": "Available",
+   "dlm_group": "1",
+   "connectors": {
+    "1": {
+     "status": "Available",
+     "info": "Status Update",
+     "unlock_progress": "",
+     "current_transaction": -1,
+     "done_charging": true,
+     "only_standby": false
+    }
+   },
+   "currents": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_assigned": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_targeted": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_offered": 0,
+   "power": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0,
+    "total": 0
+   },
+   "energy_meter_current": 142800,
+   "error_code": "NoError"
+  },
+  "2ladeplatz5": {
+   "offline_for_dlm_cycles": 0,
+   "reduced_power_offerring": false,
+   "maxing_power_for_dlm_cycles": 0,
+   "not_using_max_for_dlm_cycles": 0,
+   "using_less_than_6a_for_dlm_cycles": 0,
+   "status": "Available",
+   "dlm_group": "2",
+   "connectors": {
+    "1": {
+     "status": "Available",
+     "info": "Status Update",
+     "unlock_progress": "",
+     "current_transaction": 8,
+     "done_charging": true,
+     "only_standby": false
+    }
+   },
+   "currents": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_assigned": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_targeted": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_offered": 6,
+   "power": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0,
+    "total": 0
+   },
+   "energy_meter_current": 61000,
+   "error_code": "NoError"
+  },
+  "2ladeplatz6": {
+   "offline_for_dlm_cycles": 0,
+   "reduced_power_offerring": false,
+   "maxing_power_for_dlm_cycles": 0,
+   "not_using_max_for_dlm_cycles": 0,
+   "using_less_than_6a_for_dlm_cycles": 0,
+   "status": "Available",
+   "dlm_group": "2",
+   "connectors": {
+    "1": {
+     "status": "Available",
+     "info": "Status Update",
+     "unlock_progress": "",
+     "current_transaction": -1,
+     "done_charging": true,
+     "only_standby": false
+    }
+   },
+   "currents": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_assigned": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_targeted": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_offered": 0,
+   "power": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0,
+    "total": 0
+   },
+   "energy_meter_current": 21900,
+   "error_code": "NoError"
+  },
+  "2ladeplatz7": {
+   "offline_for_dlm_cycles": 0,
+   "reduced_power_offerring": true,
+   "maxing_power_for_dlm_cycles": 30,
+   "not_using_max_for_dlm_cycles": 0,
+   "using_less_than_6a_for_dlm_cycles": 27,
+   "status": "Available",
+   "dlm_group": "2",
+   "connectors": {
+    "1": {
+     "status": "Charging",
+     "info": "Status Update -Type2-",
+     "unlock_progress": "",
+     "current_transaction": 7,
+     "done_charging": false,
+     "only_standby": false
+    }
+   },
+   "currents": {
+    "l1": 6,
+    "l2": 6,
+    "l3": 6
+   },
+   "current_assigned": {
+    "l1": 8,
+    "l2": 8,
+    "l3": 8
+   },
+   "current_targeted": {
+    "l1": 8,
+    "l2": 8,
+    "l3": 8
+   },
+   "current_offered": 8,
+   "power": {
+    "l1": 1386,
+    "l2": 1397,
+    "l3": 1342,
+    "total": 4126
+   },
+   "energy_meter_current": 60200,
+   "error_code": "NoError"
+  },
+  "2ladeplatz8": {
+   "offline_for_dlm_cycles": 0,
+   "reduced_power_offerring": false,
+   "maxing_power_for_dlm_cycles": 30,
+   "not_using_max_for_dlm_cycles": 0,
+   "using_less_than_6a_for_dlm_cycles": 0,
+   "status": "Available",
+   "dlm_group": "2",
+   "connectors": {
+    "1": {
+     "status": "Charging",
+     "info": "Energy is flowing to vehicle",
+     "unlock_progress": "",
+     "current_transaction": 10,
+     "done_charging": false,
+     "only_standby": false
+    }
+   },
+   "currents": {
+    "l1": 16,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_assigned": {
+    "l1": 16,
+    "l2": 16,
+    "l3": 16
+   },
+   "current_targeted": {
+    "l1": 16,
+    "l2": 16,
+    "l3": 16
+   },
+   "current_offered": 16,
+   "power": {
+    "l1": 3704,
+    "l2": 0,
+    "l3": 0,
+    "total": 3704
+   },
+   "energy_meter_current": 3800,
+   "error_code": "NoError"
+  },
+  "JCME321396721292-40": {
+   "offline_for_dlm_cycles": 0,
+   "reduced_power_offerring": false,
+   "maxing_power_for_dlm_cycles": 0,
+   "not_using_max_for_dlm_cycles": 0,
+   "using_less_than_6a_for_dlm_cycles": 0,
+   "status": "Available",
+   "dlm_group": "J",
+   "connectors": {
+    "1": {
+     "status": "Available",
+     "info": "Status Update",
+     "unlock_progress": "",
+     "current_transaction": -1,
+     "done_charging": true,
+     "only_standby": false
+    }
+   },
+   "currents": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_assigned": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_targeted": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_offered": 0,
+   "power": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0,
+    "total": 0
+   },
+   "energy_meter_current": 100,
+   "error_code": "NoError"
+  },
+  "JCME321397321292-41": {
+   "offline_for_dlm_cycles": 0,
+   "reduced_power_offerring": false,
+   "maxing_power_for_dlm_cycles": 0,
+   "not_using_max_for_dlm_cycles": 0,
+   "using_less_than_6a_for_dlm_cycles": 0,
+   "status": "Available",
+   "dlm_group": "J",
+   "connectors": {
+    "1": {
+     "status": "Available",
+     "info": "Status Update",
+     "unlock_progress": "",
+     "current_transaction": -1,
+     "done_charging": true,
+     "only_standby": false
+    }
+   },
+   "currents": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_assigned": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_targeted": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_offered": 0,
+   "power": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0,
+    "total": 0
+   },
+   "energy_meter_current": 100,
+   "error_code": "NoError"
+  },
+  "JCME321397621292-42": {
+   "offline_for_dlm_cycles": 0,
+   "reduced_power_offerring": false,
+   "maxing_power_for_dlm_cycles": 0,
+   "not_using_max_for_dlm_cycles": 0,
+   "using_less_than_6a_for_dlm_cycles": 0,
+   "status": "Available",
+   "dlm_group": "J",
+   "connectors": {
+    "1": {
+     "status": "Available",
+     "info": "Status Update",
+     "unlock_progress": "",
+     "current_transaction": -1,
+     "done_charging": true,
+     "only_standby": false
+    }
+   },
+   "currents": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_assigned": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_targeted": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_offered": 0,
+   "power": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0,
+    "total": 0
+   },
+   "energy_meter_current": 100,
+   "error_code": "NoError"
+  },
+  "JMCE-16": {
+   "offline_for_dlm_cycles": 0,
+   "reduced_power_offerring": false,
+   "maxing_power_for_dlm_cycles": 0,
+   "not_using_max_for_dlm_cycles": 0,
+   "using_less_than_6a_for_dlm_cycles": 0,
+   "status": "Available",
+   "dlm_group": "J",
+   "connectors": {
+    "1": {
+     "status": "Available",
+     "info": "Status Update",
+     "unlock_progress": "",
+     "current_transaction": -1,
+     "done_charging": true,
+     "only_standby": false
+    }
+   },
+   "currents": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_assigned": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_targeted": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0
+   },
+   "current_offered": 0,
+   "power": {
+    "l1": 0,
+    "l2": 0,
+    "l3": 0,
+    "total": 0
+   },
+   "energy_meter_current": 10700,
+   "error_code": "NoError"
   }
  },
  "groups": {
+  "1": {
+   "chargers": {
+    "1ladeplatz123": "true"
+   },
+   "dlm_action_pending": true,
+   "dlm_locked_out": false,
+   "max_l1": 32,
+   "max_l2": 32,
+   "max_l3": 32,
+   "current_l1": 15,
+   "current_l2": 15,
+   "current_l3": 15,
+   "assigned_l1": 0,
+   "assigned_l2": 0,
+   "assigned_l3": 0,
+   "offered_3phase": 0,
+   "initialized": false,
+   "avarage_assigned_current": 0
+  },
   "2": {
    "chargers": {
     "2ladeplatz5": "true",
@@ -157,26 +544,65 @@
     "2ladeplatz7": "true",
     "2ladeplatz8": "true"
    },
+   "dlm_action_pending": false,
+   "dlm_locked_out": false,
+   "max_l1": 32,
+   "max_l2": 32,
+   "max_l3": 32,
+   "current_l1": 22,
+   "current_l2": 6,
+   "current_l3": 6,
+   "assigned_l1": 24,
+   "assigned_l2": 24,
+   "assigned_l3": 24,
+   "offered_3phase": 24,
+   "initialized": false,
+   "avarage_assigned_current": 0
+  },
+  "J": {
+   "chargers": {
+    "JCME321396721292-40": "true",
+    "JCME321397321292-41": "true",
+    "JCME321397621292-42": "true",
+    "JMCE-16": "true"
+   },
+   "dlm_action_pending": true,
+   "dlm_locked_out": false,
    "max_l1": 32,
    "max_l2": 32,
    "max_l3": 32,
    "current_l1": 0,
    "current_l2": 0,
    "current_l3": 0,
-   "initialized": false
+   "assigned_l1": 0,
+   "assigned_l2": 0,
+   "assigned_l3": 0,
+   "offered_3phase": 0,
+   "initialized": false,
+   "avarage_assigned_current": 0
   }
  },
- "current_total_l_1": 0,
- "current_total_l_2": 0,
- "current_total_l_3": 0,
+ "current_total_l_1": 37,
+ "current_total_l_2": 21,
+ "current_total_l_3": 21,
  "groups_initialized": {
-  "2": true
+  "1": true,
+  "2": true,
+  "J": true
  },
  "charge_points_initialized": {
+  "1ladeplatz04": true,
+  "1ladeplatz05": true,
+  "1ladeplatz06": true,
+  "1ladeplatz123": true,
   "2ladeplatz5": true,
   "2ladeplatz6": true,
   "2ladeplatz7": true,
-  "2ladeplatz8": true
+  "2ladeplatz8": true,
+  "JCME321396721292-40": true,
+  "JCME321397321292-41": true,
+  "JCME321397621292-42": true,
+  "JMCE-16": true
  },
  "transactions": {
   "0": {
@@ -196,6 +622,15 @@
    "end_meter": 21900,
    "connector_id": 1,
    "id_tag": "MACDC442718546C"
+  },
+  "10": {
+   "id": 10,
+   "start_time": "2022-07-06T10:10:12Z",
+   "end_time": null,
+   "start_meter": 100,
+   "end_meter": 0,
+   "connector_id": 1,
+   "id_tag": "bd52b9a0"
   },
   "2": {
    "id": 2,
@@ -218,21 +653,57 @@
   "4": {
    "id": 4,
    "start_time": "2022-07-04T14:42:58Z",
-   "end_time": null,
+   "end_time": "2022-07-04T15:18:40Z",
    "start_meter": 21900,
-   "end_meter": 0,
+   "end_meter": 21900,
    "connector_id": 1,
    "id_tag": "MACDC442718546C"
   },
   "5": {
    "id": 5,
    "start_time": "2022-07-04T14:43:11Z",
-   "end_time": null,
+   "end_time": "2022-07-04T14:50:12Z",
    "start_meter": 31700,
-   "end_meter": 0,
+   "end_meter": 31700,
    "connector_id": 1,
    "id_tag": "MAC001823375907"
+  },
+  "6": {
+   "id": 6,
+   "start_time": "2022-07-05T07:58:16Z",
+   "end_time": "2022-07-05T09:17:27Z",
+   "start_meter": 31700,
+   "end_meter": 42500,
+   "connector_id": 1,
+   "id_tag": "MACDC442718546C"
+  },
+  "7": {
+   "id": 7,
+   "start_time": "2022-07-05T07:58:44Z",
+   "end_time": null,
+   "start_meter": 12200,
+   "end_meter": 0,
+   "connector_id": 1,
+   "id_tag": "108bf37b"
+  },
+  "8": {
+   "id": 8,
+   "start_time": "2022-07-05T09:30:08Z",
+   "end_time": null,
+   "start_meter": 42500,
+   "end_meter": 0,
+   "connector_id": 1,
+   "id_tag": "MACDC442718546C"
+  },
+  "9": {
+   "id": 9,
+   "start_time": "2022-07-06T10:00:06Z",
+   "end_time": "2022-07-06T10:03:27Z",
+   "start_meter": 100,
+   "end_meter": 100,
+   "connector_id": 1,
+   "id_tag": "108bf37b"
   }
  },
- "next_transaction_id": 6
+ "next_transaction_id": 11
 }
