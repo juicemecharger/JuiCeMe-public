@@ -266,6 +266,18 @@ func (handler *CentralSystemHandler) OnStatusNotification(chargePointId string, 
 			handler.SetConfig(chargePointId, "DlmOperatorPhase1Limit", "0")
 			handler.SetConfig(chargePointId, "DlmOperatorPhase2Limit", "0")
 			handler.SetConfig(chargePointId, "DlmOperatorPhase3Limit", "0")
+		} else if request.Status == "Available" {
+			cp := handler.ChargePoints[chargePointId]
+			cp.Power.L1 = 0
+			cp.Power.L2 = 0
+			cp.Power.L3 = 0
+			cp.Power.Total = 0
+			cp.Currents.L1 = 0
+			cp.Currents.L2 = 0
+			cp.Currents.L3 = 0
+			cp.MaxingPowerForDLMCycles = 0
+			connectorInfo.OnlyStandby = false
+			connectorInfo.DoneCharging = true
 		}
 		logDefault(chargePointId, request.GetFeatureName()).Infof("connector %v updated status to %v", request.ConnectorId, request.Status)
 		log.Println(request.Info)
