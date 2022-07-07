@@ -278,7 +278,7 @@
      "status": "Charging",
      "info": "Energy is flowing to vehicle",
      "unlock_progress": "NotSupported",
-     "current_transaction": 7,
+     "current_transaction": -1,
      "done_charging": false,
      "only_standby": false
     }
@@ -531,9 +531,7 @@
  },
  "groups": {
   "1": {
-   "chargers": {
-    "1ladeplatz123": "true"
-   },
+   "chargers": {},
    "dlm_action_pending": true,
    "dlm_locked_out": false,
    "max_l1": 32,
