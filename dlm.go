@@ -15,7 +15,7 @@ func MustParseDuration(s string) time.Duration {
 
 func (handler *CentralSystemHandler) dlmstart() {
 	log.Println("Starting DLM")
-	interval := MustParseDuration("5s")
+	interval := MustParseDuration("1s")
 	timer := time.NewTimer(interval)
 	timer.Reset(interval)
 	go func() {

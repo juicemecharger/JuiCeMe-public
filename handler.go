@@ -263,9 +263,9 @@ func (handler *CentralSystemHandler) OnStatusNotification(chargePointId string, 
 		} else if request.Status == "Charging" && request.Info == "Energy is flowing to vehicle" {
 			connectorInfo.DoneCharging = false
 		} else if request.Status == "Charging" && connectorInfo.DoneCharging {
-			go handler.SetConfig(chargePointId, "DlmOperatorPhase1Limit", "0")
-			go handler.SetConfig(chargePointId, "DlmOperatorPhase2Limit", "0")
-			go handler.SetConfig(chargePointId, "DlmOperatorPhase3Limit", "0")
+			handler.SetConfig(chargePointId, "DlmOperatorPhase1Limit", "0")
+			handler.SetConfig(chargePointId, "DlmOperatorPhase2Limit", "0")
+			handler.SetConfig(chargePointId, "DlmOperatorPhase3Limit", "0")
 		}
 		logDefault(chargePointId, request.GetFeatureName()).Infof("connector %v updated status to %v", request.ConnectorId, request.Status)
 		log.Println(request.Info)
