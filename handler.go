@@ -253,7 +253,7 @@ func (handler *CentralSystemHandler) OnStatusNotification(chargePointId string, 
 		connectorInfo := info.getConnector(request.ConnectorId)
 		connectorInfo.Status = request.Status
 		connectorInfo.Info = request.Info
-		if request.Status == "SuspendedEV" && request.Info == "No energy flowing to vehicle" {
+		if request.Status == "SuspendedEV" {
 			connectorInfo.DoneCharging = true
 			connectorInfo.OnlyStandby = true
 
