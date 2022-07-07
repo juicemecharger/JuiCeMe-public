@@ -240,17 +240,22 @@ func (handler *CentralSystemHandler) RampUpPower() {
 				}
 			} else {
 				//Car only plugged in, but not using any power
-				if cp.CurrentTargeted.L1 != 0 {
+				if cp.CurrentTargeted.L1 != 6 {
 					log.Printf("%v stopped charging, removing power assignment", name)
-					cp.CurrentTargeted.L1 = 0
-					cp.CurrentTargeted.L2 = 0
-					cp.CurrentTargeted.L3 = 0
-					handler.Groups[groupid].DLMActionPending = true
+					cp.CurrentTargeted.L1 = 6
+					cp.CurrentTargeted.L2 = 6
+					cp.CurrentTargeted.L3 = 6
+				} else {
+					if cp.Currents.L1 > 0 || cp.Currents.L2 > 0 || cp.Currents.L3 > 0 {
+						go handler.SetConfig(name, "DlmOperatorPhase1Limit", "0")
+						go handler.SetConfig(name, "DlmOperatorPhase2Limit", "0")
+						go handler.SetConfig(name, "DlmOperatorPhase3Limit", "0")
+					}
 				}
 			}
 		}
 		if debugHearthBeat {
-			time.Sleep(20 * time.Millisecond)
+			time.Sleep(2 * time.Millisecond)
 		}
 	}
 	log.Println(wantsfullpower)
