@@ -1,7 +1,7 @@
 {
  "charge_points": {
   "1ladeplatz04": {
-   "offline_for_dlm_cycles": 125795,
+   "offline_for_dlm_cycles": 127492,
    "reduced_power_offerring": false,
    "maxing_power_for_dlm_cycles": 0,
    "not_using_max_for_dlm_cycles": 0,
@@ -45,7 +45,7 @@
    "error_code": "NoError"
   },
   "1ladeplatz05": {
-   "offline_for_dlm_cycles": 66025,
+   "offline_for_dlm_cycles": 67722,
    "reduced_power_offerring": false,
    "maxing_power_for_dlm_cycles": 0,
    "not_using_max_for_dlm_cycles": 0,
@@ -89,7 +89,7 @@
    "error_code": "NoError"
   },
   "1ladeplatz06": {
-   "offline_for_dlm_cycles": 66454,
+   "offline_for_dlm_cycles": 68151,
    "reduced_power_offerring": false,
    "maxing_power_for_dlm_cycles": 0,
    "not_using_max_for_dlm_cycles": 0,
@@ -277,7 +277,7 @@
     "1": {
      "status": "Charging",
      "info": "Energy is flowing to vehicle",
-     "unlock_progress": "",
+     "unlock_progress": "NotSupported",
      "current_transaction": 7,
      "done_charging": false,
      "only_standby": false
@@ -300,12 +300,12 @@
    },
    "current_offered": 16,
    "power": {
-    "l1": 3624,
+    "l1": 3652,
     "l2": 0,
     "l3": 0,
-    "total": 3624
+    "total": 3652
    },
-   "energy_meter_current": 66900,
+   "energy_meter_current": 69200,
    "error_code": "NoError"
   },
   "2ladeplatz8": {
