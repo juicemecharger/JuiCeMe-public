@@ -246,10 +246,16 @@ func (handler *CentralSystemHandler) RampUpPower() {
 					cp.CurrentTargeted.L2 = 6
 					cp.CurrentTargeted.L3 = 6
 				} else {
-					if cp.Currents.L1 > 0 || cp.Currents.L2 > 0 || cp.Currents.L3 > 0 {
-						go handler.SetConfig(name, "DlmOperatorPhase1Limit", "0")
-						go handler.SetConfig(name, "DlmOperatorPhase2Limit", "0")
-						go handler.SetConfig(name, "DlmOperatorPhase3Limit", "0")
+					if cp.Currents.L1 > 0 || cp.Currents.L2 > 0 || cp.Currents.L3 > 0 && cp.Connectors[1].DoneCharging {
+						handler.SetConfig(name, "DlmOperatorPhase1Limit", "0")
+						handler.SetConfig(name, "DlmOperatorPhase2Limit", "0")
+						handler.SetConfig(name, "DlmOperatorPhase3Limit", "0")
+						cp.CurrentAssigned.L1 = 0
+						cp.CurrentTargeted.L1 = 0
+						cp.CurrentAssigned.L2 = 0
+						cp.CurrentTargeted.L2 = 0
+						cp.CurrentAssigned.L3 = 0
+						cp.CurrentTargeted.L3 = 0
 					}
 				}
 			}

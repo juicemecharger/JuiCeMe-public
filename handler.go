@@ -266,6 +266,13 @@ func (handler *CentralSystemHandler) OnStatusNotification(chargePointId string, 
 			handler.SetConfig(chargePointId, "DlmOperatorPhase1Limit", "0")
 			handler.SetConfig(chargePointId, "DlmOperatorPhase2Limit", "0")
 			handler.SetConfig(chargePointId, "DlmOperatorPhase3Limit", "0")
+			cp := handler.ChargePoints[chargePointId]
+			cp.CurrentAssigned.L1 = 0
+			cp.CurrentTargeted.L1 = 0
+			cp.CurrentAssigned.L2 = 0
+			cp.CurrentTargeted.L2 = 0
+			cp.CurrentAssigned.L3 = 0
+			cp.CurrentTargeted.L3 = 0
 		} else if request.Status == "Available" {
 			cp := handler.ChargePoints[chargePointId]
 			cp.Power.L1 = 0
