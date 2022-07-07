@@ -165,13 +165,13 @@ func (handler *CentralSystemHandler) RampUpPower() {
 					handler.ResetDLM(name)
 					log.Printf("%v wants more power, pulling them out of stanby 6A mode after they maxed that for %v times", name, dlmrampupfromstandby)
 					//Car wants moar powaaarrr, assume that charging limit was increased, thus we assume it as normal charging at full rate
-					wantsfullpower[groupid][name] = true
-					//todo:temporary - removemepls
-					//cp.CurrentTargeted.L1 = 8
-					//cp.CurrentTargeted.L2 = 8
-					//cp.CurrentTargeted.L3 = 8
-					//end
-					cp.ReducedPowerOfferring = false
+					//wantsfullpower[groupid][name] = true
+					cp.CurrentTargeted.L1 = 8
+					cp.CurrentTargeted.L2 = 8
+					cp.CurrentTargeted.L3 = 8
+					grouppower := newpower[groupid]
+					cp.ReducedPowerOfferring = true
+					grouppower["group"] += 8
 				} else if cp.Connectors[1].OnlyStandby && (cp.Currents.L1 > dlmrampupfromstandbyaftercurrent || cp.Currents.L2 > dlmrampupfromstandbyaftercurrent || cp.Currents.L3 > dlmrampupfromstandbyaftercurrent) {
 					cp.MaxingPowerForDLMCycles = cp.MaxingPowerForDLMCycles + 1
 					log.Printf("%v maxing standby 6A, waiting for total %v/%v cycles for rampup", name, cp.MaxingPowerForDLMCycles, dlmrampupfromstandby)
@@ -196,6 +196,8 @@ func (handler *CentralSystemHandler) RampUpPower() {
 							cp.CurrentTargeted.L2 = cp.Currents.L2 + rampdowntocurrentoffset
 							cp.CurrentTargeted.L3 = cp.Currents.L3 + rampdowntocurrentoffset
 							cp.ReducedPowerOfferring = true
+							grouppower := newpower[groupid]
+							grouppower["group"] += cp.CurrentTargeted.L1
 							handler.ResetDLM(name)
 						} else {
 							//Car is using 5A or less
@@ -252,7 +254,45 @@ func (handler *CentralSystemHandler) RampUpPower() {
 		}
 	}
 	log.Println(wantsfullpower)
-	log.Println("---------------------------------DLMEND--------------------------------------")
+	log.Println("---------------------------------DLMCollectorEnd--------------------------------------")
+	log.Println(" ")
+	log.Println("---------------------------------DLMGroupAssignmentStart--------------------------------------")
+	for groupid, chargermap := range wantsfullpower {
+		acivechargers := 0
+		groupavailablecurrent := handler.Groups[groupid].MaxL1
+		grouppower := newpower[groupid]
+		groupavailablecurrent = groupavailablecurrent - grouppower["group"]
+		log.Printf("%v A available remaining after ReducedCurrentOfferings for distribution", groupavailablecurrent)
+		for _, allthepower := range chargermap {
+			if allthepower {
+				acivechargers++
+			}
+		}
+		if acivechargers != 0 {
+			medianavailable := groupavailablecurrent / acivechargers
+			if medianavailable > 16 {
+				medianavailable = 16
+			}
+			if debugHearthBeat {
+				log.Printf("------------- MaxPowerDLM - Group %v -------------------", groupid)
+				log.Printf("  MedianPower: %v", medianavailable)
+
+			}
+			for name, _ := range chargermap {
+				handler.ChargePoints[name].CurrentTargeted.L1 = medianavailable
+				handler.ChargePoints[name].CurrentTargeted.L2 = medianavailable
+				handler.ChargePoints[name].CurrentTargeted.L3 = medianavailable
+				if debugHearthBeat {
+					log.Printf("  Startion %v Power: %v", name, medianavailable)
+				}
+			}
+		} else {
+			log.Printf("------------- MaxPowerDLM - Group %v -------------------", groupid)
+			log.Printf("_-_-_-_-_-_ SKIPPED, none want full power _-_-_-_-_-_-_-_-")
+		}
+
+	}
+	log.Println("---------------------------------DLMGroupAssignmentEND--------------------------------------")
 	return
 }
 
