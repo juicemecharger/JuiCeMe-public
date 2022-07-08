@@ -256,12 +256,24 @@ func (handler *CentralSystemHandler) RampUpPower() {
 	log.Println("---------------------------------DLMCollectorEnd--------------------------------------")
 	log.Println(" ")
 	log.Println("---------------------------------DLMGroupAssignmentStart--------------------------------------")
+	reducedofferings := make(map[string]int)
+	for groupname, group := range handler.Groups {
+		reducedofferings[groupname] = 0
+		for name, active := range group.Chargers {
+			if active == "true" {
+				if handler.ChargePoints[name].ReducedPowerOfferring {
+					reducedofferings[groupname] += handler.ChargePoints[name].CurrentTargeted.L1
+				}
+			}
+		}
+	}
+
 	for groupid, chargermap := range wantsfullpower {
 		acivechargers := 0
 		groupavailablecurrent := handler.Groups[groupid].MaxL1
-		grouppower := newpower[groupid]
-		groupavailablecurrent = groupavailablecurrent - grouppower["group"]
-		log.Printf("%v A available remaining after %v A ReducedCurrentOfferings for distribution", groupavailablecurrent, grouppower["group"])
+		grouppower := reducedofferings[groupid]
+		groupavailablecurrent = groupavailablecurrent - grouppower
+		log.Printf("%v A available remaining after %v A ReducedCurrentOfferings for distribution", groupavailablecurrent, grouppower)
 		for _, allthepower := range chargermap {
 			if allthepower {
 				acivechargers++
