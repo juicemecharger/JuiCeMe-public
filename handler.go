@@ -81,6 +81,7 @@ func (ci *ConnectorInfo) hasTransactionInProgress() bool {
 
 // ChargePointState contains all relevant state data for a connected charge point, simplified only working with single-connector chargepoints
 type ChargePointState struct {
+	EVforDLMCycles              int                    `json:"evfor_dlm_cycles"`
 	EVSEForDLMCycles            int                    `json:"evse_for_dlm_cycles"`
 	OfflineForDLMCycles         int                    `json:"offline_for_dlm_cycles"`
 	ReducedPowerOfferring       bool                   `json:"reduced_power_offerring"`
@@ -255,8 +256,6 @@ func (handler *CentralSystemHandler) OnStatusNotification(chargePointId string, 
 		connectorInfo.Status = request.Status
 		connectorInfo.Info = request.Info
 		if request.Status == "SuspendedEV" {
-			connectorInfo.DoneCharging = true
-			connectorInfo.OnlyStandby = true
 
 		} else if request.Status == "SuspendedEVSE" && connectorInfo.DoneCharging {
 			connectorInfo.DoneCharging = false

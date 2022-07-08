@@ -238,6 +238,7 @@ func (handler *CentralSystemHandler) RampUpPower() {
 				if !cp.Connectors[1].OnlyStandby && !cp.Connectors[1].DoneCharging && !cp.ReducedPowerOfferring {
 					wantsfullpower[groupid][name] = true
 				}
+
 			} else {
 				//Car only plugged in, but not using any power
 				if cp.CurrentTargeted.L1 != 6 {
@@ -251,6 +252,15 @@ func (handler *CentralSystemHandler) RampUpPower() {
 		if debugHearthBeat {
 			time.Sleep(2 * time.Millisecond)
 		}
+		if handler.ChargePoints[name].EVforDLMCycles > 10 && handler.ChargePoints[name].Connectors[1].Status == "SuspendedEV" {
+			handler.ChargePoints[name].Connectors[1].DoneCharging = true
+			handler.ChargePoints[name].Connectors[1].OnlyStandby = true
+		} else if handler.ChargePoints[name].Connectors[1].Status == "SuspendedEV" {
+			handler.ChargePoints[name].EVforDLMCycles++
+		} else {
+			handler.ChargePoints[name].EVforDLMCycles = 0
+		}
+
 	}
 	log.Println(wantsfullpower)
 	log.Println("---------------------------------DLMCollectorEnd--------------------------------------")
