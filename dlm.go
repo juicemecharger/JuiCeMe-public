@@ -260,7 +260,7 @@ func (handler *CentralSystemHandler) RampUpPower() {
 	for groupname, group := range handler.Groups {
 		reducedofferings[groupname] = 0
 		for name, active := range group.Chargers {
-			if active == "true" {
+			if active == "true" && !handler.ChargePoints[name].Connectors[1].DoneCharging {
 				if handler.ChargePoints[name].ReducedPowerOfferring {
 					reducedofferings[groupname] += handler.ChargePoints[name].CurrentTargeted.L1
 				}
