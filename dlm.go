@@ -261,7 +261,7 @@ func (handler *CentralSystemHandler) RampUpPower() {
 		groupavailablecurrent := handler.Groups[groupid].MaxL1
 		grouppower := newpower[groupid]
 		groupavailablecurrent = groupavailablecurrent - grouppower["group"]
-		log.Printf("%v A available remaining after ReducedCurrentOfferings for distribution", groupavailablecurrent)
+		log.Printf("%v A available remaining after %v A ReducedCurrentOfferings for distribution", groupavailablecurrent, grouppower["group"])
 		for _, allthepower := range chargermap {
 			if allthepower {
 				acivechargers++
